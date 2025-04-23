@@ -165,9 +165,8 @@ export const updateCode = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    // Update both code and content fields for compatibility
+    // Only update the content field, not the code field (room identifier)
     await ctx.db.patch(args.roomId, {
-      code: args.code,
       content: args.code,
     });
   },
