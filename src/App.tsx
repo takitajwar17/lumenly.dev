@@ -402,7 +402,16 @@ function CodeEditor({ initialRoomId, onBack }: {
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [localCode, setLocalCode] = useState(""); // Local state for immediate updates
+  const [isRunningCode, setIsRunningCode] = useState(false);
+  const [isGettingReview, setIsGettingReview] = useState(false);
+  const [localCode, setLocalCode] = useState("");
+  const [activeTab, setActiveTab] = useState<'editor' | 'output' | 'review'>('editor');
+  const [review, setReview] = useState<string | null>(null);
+  const [executionTimestamp, setExecutionTimestamp] = useState<Date | null>(null);
+  const [executionTime, setExecutionTime] = useState<number | null>(null);
+  const [wordCount, setWordCount] = useState(0);
+  const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
   const navigate = useNavigate();
   const rooms = useQuery(api.rooms.list);
@@ -494,27 +503,31 @@ function CodeEditor({ initialRoomId, onBack }: {
 
   const handleRunCode = useCallback(async () => {
     if (!code || !room) return;
-    setIsLoading(true);
+    setIsRunningCode(true);
     try {
       const result = await executeCode({ language: room.language, code });
       setOutput(result.run.output);
+      setExecutionTimestamp(new Date());
+      setExecutionTime(result.run.time);
+      setActiveTab('output');
     } catch (error) {
       setOutput("Error executing code");
     } finally {
-      setIsLoading(false);
+      setIsRunningCode(false);
     }
   }, [code, executeCode, room]);
 
   const handleAIAssist = useCallback(async () => {
     if (!code || !room) return;
-    setIsLoading(true);
+    setIsGettingReview(true);
     try {
       const suggestion = await getAIAssistance({ code, language: room.language });
-      toast.info(suggestion);
+      setReview(suggestion);
+      setActiveTab('review');
     } catch (error) {
       toast.error("Failed to get AI assistance");
     } finally {
-      setIsLoading(false);
+      setIsGettingReview(false);
     }
   }, [code, getAIAssistance, room]);
   
@@ -579,55 +592,218 @@ function CodeEditor({ initialRoomId, onBack }: {
         </div>
       </div>
 
-      {/* Main Editor */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {selectedRoomId && room ? (
-          <div className="h-full grid grid-rows-2 overflow-hidden">
-            {/* Editor takes top 60% */}
-            <div className="overflow-hidden">
-              <Editor
-                height="100%"
-                language={room.language}
-                value={localCode}
-                onChange={handleEditorChange}
-                onMount={(editor) => {
-                  editor.onDidChangeCursorPosition(() => handleCursorChange(editor));
-                }}
-                options={editorOptions}
-                loading={<div className="flex items-center justify-center h-full">Loading editor...</div>}
-              />
-            </div>
-            
-            {/* Output Panel takes bottom 40% */}
-            <div className="flex flex-col overflow-hidden border-t">
-              <div className="bg-gray-50 px-4 py-2 border-b flex items-center justify-between">
-                <span className="font-medium text-gray-700">Output</span>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium mr-2">Language:</span>
-                    <span className="bg-gray-100 px-2 py-1 rounded text-sm">{room.language}</span>
+          <>
+            {/* Header */}
+            <div className="border-b border-gray-200">
+              {/* Top bar with file info and actions */}
+              <div className="flex items-center justify-between px-4 py-2 bg-gray-50">
+                <div className="flex items-center space-x-4">
+                  <h2 className="font-medium">{room.name}</h2>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-500">Language:</span>
+                    <span className="text-sm font-medium">{room.language}</span>
                   </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => void handleRunCode()}
-                    className="bg-green-500 hover:bg-green-600 text-white rounded px-4 py-1"
-                    disabled={isLoading}
+                    onClick={() => {
+                      void navigator.clipboard.writeText(code);
+                      toast.success("Code copied to clipboard");
+                    }}
+                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
+                    title="Copy code"
                   >
-                    Run
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
                   </button>
                   <button
-                    onClick={() => void handleAIAssist()}
-                    className="bg-purple-500 hover:bg-purple-600 text-white rounded px-4 py-1"
-                    disabled={isLoading}
+                    onClick={() => setLocalCode("")}
+                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
+                    title="Clear code"
                   >
-                    AI Assist
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
                   </button>
                 </div>
               </div>
-              <div className="flex-1 overflow-auto p-4 font-mono whitespace-pre bg-gray-900 text-gray-100">
-                {output || "Run your code to see the output here..."}
+
+              {/* Action toolbar */}
+              <div className="flex items-center justify-between px-4 py-2 bg-gray-100/50">
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => void handleRunCode()}
+                    disabled={isRunningCode}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                      isRunningCode
+                        ? 'bg-blue-100 text-blue-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {isRunningCode ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Running...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Run Code</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => void handleAIAssist()}
+                    disabled={isGettingReview}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                      isGettingReview
+                        ? 'bg-purple-100 text-purple-400 cursor-not-allowed'
+                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                    }`}
+                  >
+                    {isGettingReview ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Analyzing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span>AI Review</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex items-center rounded-lg bg-white/80 p-1">
+                  <button
+                    onClick={() => setActiveTab('editor')}
+                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                      activeTab === 'editor'
+                        ? 'bg-gray-200 text-gray-900'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <span>Editor</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('output')}
+                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                      activeTab === 'output'
+                        ? 'bg-gray-200 text-gray-900'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <span>Output</span>
+                    {output && activeTab !== 'output' && (
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('review')}
+                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                      activeTab === 'review'
+                        ? 'bg-gray-200 text-gray-900'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <span>Review</span>
+                    {review && activeTab !== 'review' && (
+                      <span className="w-2 h-2 rounded-full bg-purple-500" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+
+            {/* Main Content */}
+            <div className="flex-1 relative">
+              {activeTab === 'editor' && (
+                <Editor
+                  height="100%"
+                  language={room.language}
+                  value={localCode}
+                  onChange={handleEditorChange}
+                  onMount={(editor) => {
+                    editor.onDidChangeCursorPosition(() => handleCursorChange(editor));
+                  }}
+                  options={{
+                    fontFamily: "'Fira Code', monospace",
+                    bracketPairColorization: { enabled: true },
+                    ...editorOptions
+                  }}
+                />
+              )}
+
+              {activeTab === 'output' && (
+                <div className="h-full flex flex-col">
+                  <div className="flex-1 overflow-auto p-4 font-mono bg-gray-900 text-gray-100">
+                    {output || "Run your code to see the output here..."}
+                  </div>
+                  {executionTimestamp && (
+                    <div className="p-2 bg-gray-800 text-gray-400 text-xs border-t border-gray-700">
+                      <span>Executed at: {executionTimestamp.toLocaleTimeString()}</span>
+                      {executionTime && (
+                        <span className="ml-4">Duration: {executionTime}ms</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'review' && review && (
+                <div className="h-full overflow-auto p-4">
+                  <div className="max-w-3xl mx-auto space-y-4">
+                    <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                      <pre className="whitespace-pre-wrap text-sm text-gray-700">{review}</pre>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isLoading && (
+                <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+                    <p className="text-lg text-gray-700">Loading room...</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between px-4 h-6 bg-gray-50 text-gray-600 text-xs border-t border-gray-200">
+              <div className="flex items-center space-x-4">
+                <div>Ln {cursorPosition.line}, Col {cursorPosition.column}</div>
+                <div>{wordCount} words</div>
+                <div>{room.language}</div>
+              </div>
+              <div className="flex items-center space-x-4">
+                {lastSaved && (
+                  <div>Last saved: {lastSaved.toLocaleTimeString()}</div>
+                )}
+              </div>
+            </div>
+          </>
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
@@ -637,7 +813,7 @@ function CodeEditor({ initialRoomId, onBack }: {
         )}
       </div>
 
-      {/* Right Sidebar - Presence */}
+      {/* Right Sidebar - Collaborators */}
       <div className="w-64 border-l flex flex-col overflow-hidden">
         <div className="p-4 border-b">
           <h3 className="font-semibold">Collaborators</h3>
