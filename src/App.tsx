@@ -503,10 +503,6 @@ function CodeEditor({ initialRoomId, onBack }: {
               {room.code}
             </p>
             <p className="text-xs text-center mt-1 text-gray-500">Share this code with collaborators</p>
-            <div className="mt-2 pt-2 border-t border-indigo-100">
-              <p className="font-semibold text-sm mb-1">Language:</p>
-              <p className="text-center font-medium">{room.language}</p>
-            </div>
           </div>
         )}
         
