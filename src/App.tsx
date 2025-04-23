@@ -21,7 +21,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/room" replace />} />
               <Route path="/room" element={<CodeRoom />} />
-              <Route path="/room/:roomId" element={<RoomRouteHandler />} />
+              <Route path="/room/:roomCode" element={<RoomRouteHandler />} />
               <Route path="*" element={<Navigate to="/room" replace />} />
             </Routes>
           </Authenticated>
@@ -43,27 +43,55 @@ export default function App() {
   );
 }
 
-// Helper component to handle the room/:roomId route
+// Helper component to handle the room/:roomCode route
 function RoomRouteHandler() {
-  const { roomId } = useParams<{ roomId: string }>();
+  const { roomCode } = useParams<{ roomCode: string }>();
   const navigate = useNavigate();
+  const [roomId, setRoomId] = useState<Id<"rooms"> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Convert string roomId to Id<"rooms"> type safely
-  let parsedRoomId: Id<"rooms"> | null = null;
-  try {
-    if (roomId) {
-      parsedRoomId = roomId as Id<"rooms">;
+  const joinRoomByCode = useMutation(api.rooms.joinByCode);
+  
+  // Load room by code
+  useEffect(() => {
+    async function loadRoom() {
+      if (!roomCode) {
+        void navigate('/room');
+        return;
+      }
+      
+      setIsLoading(true);
+      try {
+        const roomId = await joinRoomByCode({ code: roomCode });
+        setRoomId(roomId);
+      } catch (error) {
+        toast.error("Invalid room code or room not found");
+        void navigate('/room');
+      } finally {
+        setIsLoading(false);
+      }
     }
-  } catch (error) {
-    console.error("Invalid room ID format");
-  }
+    
+    void loadRoom();
+  }, [roomCode, joinRoomByCode, navigate]);
   
   // Handle navigation back to /room
   const handleBack = useCallback(() => {
-    navigate('/room');
+    void navigate('/room');
   }, [navigate]);
   
-  return <CodeEditor initialRoomId={parsedRoomId} onBack={handleBack} />;
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+          <p className="text-lg">Loading room...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return <CodeEditor initialRoomId={roomId} onBack={handleBack} />;
 }
 
 const POPULAR_LANGUAGES = [
@@ -120,7 +148,16 @@ function CodeRoom() {
         name: newRoomName.trim(), 
         language: newRoomLanguage 
       });
-      navigate(`/room/${roomId}`);
+      
+      // Get the room to get its code
+      const roomsData = await rooms?.findFirst(r => r._id === roomId);
+      if (roomsData?.code) {
+        void navigate(`/room/${roomsData.code}`);
+      } else {
+        // Fallback to the main room page if we can't find the code
+        void navigate('/room');
+      }
+      
       setIsCreateModalOpen(false);
       toast.success("Room created successfully!");
     } catch (error) {
@@ -128,7 +165,7 @@ function CodeRoom() {
     } finally {
       setIsLoading(false);
     }
-  }, [newRoomName, newRoomLanguage, createRoom, navigate]);
+  }, [newRoomName, newRoomLanguage, createRoom, navigate, rooms]);
   
   const handleJoinRoom = useCallback(async () => {
     if (joinCode.length !== 6) {
@@ -138,18 +175,23 @@ function CodeRoom() {
     
     setIsLoading(true);
     try {
-      const roomId = await joinRoomByCode({ code: joinCode });
-      navigate(`/room/${roomId}`);
+      // Just validate that the room exists
+      await joinRoomByCode({ code: joinCode });
+      
+      // Navigate to the room
+      void navigate(`/room/${joinCode}`);
+      
       toast.success("Joined room successfully!");
     } catch (error) {
       toast.error("Failed to join room. Invalid code.");
-    } finally {
       setIsLoading(false);
     }
   }, [joinCode, joinRoomByCode, navigate]);
   
-  const handleSelectRoom = useCallback((roomId: Id<"rooms">) => {
-    navigate(`/room/${roomId}`);
+  const handleSelectRoom = useCallback((roomCode: string) => {
+    if (roomCode) {
+      void navigate(`/room/${roomCode}`);
+    }
   }, [navigate]);
 
   return (
@@ -323,7 +365,7 @@ function CodeRoom() {
               {rooms.map((room) => (
                 <button
                   key={room._id}
-                  onClick={() => void handleSelectRoom(room._id)}
+                  onClick={() => void handleSelectRoom(room.code)}
                   className="w-full text-left p-4 rounded border bg-white hover:bg-indigo-50 transition-colors flex justify-between items-center"
                 >
                   <div>
@@ -382,7 +424,7 @@ function CodeEditor({ initialRoomId, onBack }: {
   useEffect(() => {
     if (selectedRoomId && !isLoading && room === null) {
       toast.error("Room not found");
-      navigate('/room');
+      void navigate('/room');
     }
   }, [selectedRoomId, room, isLoading, navigate]);
 
@@ -430,8 +472,10 @@ function CodeEditor({ initialRoomId, onBack }: {
     }
   }, [code, getAIAssistance, room]);
   
-  const handleSelectRoom = useCallback((roomId: Id<"rooms">) => {
-    void navigate(`/room/${roomId}`);
+  const handleSelectRoom = useCallback((roomCode: string) => {
+    if (roomCode) {
+      void navigate(`/room/${roomCode}`);
+    }
   }, [navigate]);
 
   if (isLoading && !room) {
@@ -477,7 +521,7 @@ function CodeEditor({ initialRoomId, onBack }: {
           {rooms?.map((room) => (
             <button
               key={room._id}
-              onClick={() => void handleSelectRoom(room._id)}
+              onClick={() => void handleSelectRoom(room.code)}
               className={`w-full text-left p-2 rounded mb-2 ${
                 selectedRoomId === room._id
                   ? "bg-indigo-100"
