@@ -35,6 +35,15 @@ export default function App() {
   );
 }
 
+const POPULAR_LANGUAGES = [
+  { id: "javascript", name: "JavaScript", icon: "JS" },
+  { id: "typescript", name: "TypeScript", icon: "TS" },
+  { id: "python", name: "Python", icon: "PY" },
+  { id: "java", name: "Java", icon: "JV" },
+  { id: "cpp", name: "C++", icon: "C++" },
+  { id: "csharp", name: "C#", icon: "C#" },
+];
+
 function CodeRoom() {
   const [view, setView] = useState<"selection" | "editor">("selection");
   const [selectedRoomId, setSelectedRoomId] = useState<Id<"rooms"> | null>(null);
@@ -44,6 +53,7 @@ function CodeRoom() {
   const [newRoomLanguage, setNewRoomLanguage] = useState("javascript");
   const [isLoading, setIsLoading] = useState(false);
   const [languages, setLanguages] = useState<any[]>([]);
+  const [showAllLanguages, setShowAllLanguages] = useState(false);
   
   const rooms = useQuery(api.rooms.list);
   const createRoom = useMutation(api.rooms.create);
@@ -59,11 +69,13 @@ function CodeRoom() {
   
   const handleCreateRoomClick = useCallback(() => {
     setIsCreateModalOpen(true);
+    setNewRoomName("");
+    setNewRoomLanguage("javascript");
+    setShowAllLanguages(false);
   }, []);
   
   const handleCloseModal = useCallback(() => {
     setIsCreateModalOpen(false);
-    setNewRoomName("");
   }, []);
   
   const handleCreateRoom = useCallback(async () => {
@@ -135,30 +147,75 @@ function CodeRoom() {
                     placeholder="Enter room name"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                     disabled={isLoading}
+                    autoFocus
                   />
                 </div>
                 
                 <div>
-                  <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Programming Language
                   </label>
-                  <select
-                    id="language"
-                    value={newRoomLanguage}
-                    onChange={(e) => setNewRoomLanguage(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                    disabled={isLoading}
-                  >
-                    {languages.length > 0 ? (
-                      languages.map((lang) => (
-                        <option key={lang.language} value={lang.language}>
-                          {lang.language}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="javascript">JavaScript</option>
-                    )}
-                  </select>
+                  
+                  {!showAllLanguages ? (
+                    <>
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        {POPULAR_LANGUAGES.map(lang => (
+                          <button
+                            key={lang.id}
+                            type="button"
+                            onClick={() => setNewRoomLanguage(lang.id)}
+                            className={`p-2 rounded border ${newRoomLanguage === lang.id 
+                              ? 'bg-indigo-100 border-indigo-300 text-indigo-700' 
+                              : 'border-gray-200 hover:bg-gray-50'}`}
+                          >
+                            <div className="flex flex-col items-center">
+                              <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded mb-1">
+                                {lang.icon}
+                              </div>
+                              <span className="text-xs">{lang.name}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowAllLanguages(true)}
+                        className="text-sm text-indigo-600 hover:text-indigo-800"
+                      >
+                        Show all languages
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <select
+                        value={newRoomLanguage}
+                        onChange={(e) => setNewRoomLanguage(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        disabled={isLoading}
+                      >
+                        {languages.length > 0 ? (
+                          languages.map((lang) => (
+                            <option key={lang.language} value={lang.language}>
+                              {lang.language}
+                            </option>
+                          ))
+                        ) : (
+                          POPULAR_LANGUAGES.map(lang => (
+                            <option key={lang.id} value={lang.id}>
+                              {lang.name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setShowAllLanguages(false)}
+                        className="text-sm text-indigo-600 hover:text-indigo-800 mt-1"
+                      >
+                        Show popular languages
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -278,8 +335,6 @@ function CodeEditor({ initialRoomId, onBack }: {
   const [selectedRoomId, setSelectedRoomId] = useState<Id<"rooms"> | null>(initialRoomId);
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
-  const [languages, setLanguages] = useState<any[]>([]);
-  const [selectedLanguage, setSelectedLanguage] = useState("python");
   const [isLoading, setIsLoading] = useState(false);
 
   const rooms = useQuery(api.rooms.list);
@@ -291,25 +346,16 @@ function CodeEditor({ initialRoomId, onBack }: {
     selectedRoomId ? { roomId: selectedRoomId } : "skip"
   );
   
-  const createRoom = useMutation(api.rooms.create);
   const updateCode = useMutation(api.rooms.updateCode);
   const updatePresence = useMutation(api.rooms.updatePresence);
   const executeCode = useAction(api.code.executeCode);
   const getAIAssistance = useAction(api.code.getAIAssistance);
-
-  useEffect(() => {
-    void fetch("https://emkc.org/api/v2/piston/runtimes")
-      .then((r) => r.json())
-      .then(setLanguages)
-      .catch(err => console.error("Failed to fetch languages:", err));
-  }, []);
   
   // Set code when room changes
   useEffect(() => {
     if (room) {
       // Handle both new rooms with content field and old rooms without it
       setCode(room.content || room.code || "");
-      setSelectedLanguage(room.language);
     }
   }, [room]);
 
@@ -331,46 +377,31 @@ function CodeEditor({ initialRoomId, onBack }: {
     });
   }, [selectedRoomId, updatePresence]);
 
-  const handleCreateRoom = useCallback(async () => {
-    const name = prompt("Enter room name:");
-    if (!name) return;
-    setIsLoading(true);
-    try {
-      const roomId = await createRoom({ name, language: selectedLanguage });
-      setSelectedRoomId(roomId);
-      toast.success(`Room created! Share code: ${room?.code || "Loading..."}`);
-    } catch (error) {
-      toast.error("Failed to create room");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [createRoom, selectedLanguage, room?.code]);
-
   const handleRunCode = useCallback(async () => {
-    if (!code) return;
+    if (!code || !room) return;
     setIsLoading(true);
     try {
-      const result = await executeCode({ language: selectedLanguage, code });
+      const result = await executeCode({ language: room.language, code });
       setOutput(result.run.output);
     } catch (error) {
       setOutput("Error executing code");
     } finally {
       setIsLoading(false);
     }
-  }, [code, executeCode, selectedLanguage]);
+  }, [code, executeCode, room]);
 
   const handleAIAssist = useCallback(async () => {
-    if (!code) return;
+    if (!code || !room) return;
     setIsLoading(true);
     try {
-      const suggestion = await getAIAssistance({ code, language: selectedLanguage });
+      const suggestion = await getAIAssistance({ code, language: room.language });
       toast.info(suggestion);
     } catch (error) {
       toast.error("Failed to get AI assistance");
     } finally {
       setIsLoading(false);
     }
-  }, [code, getAIAssistance, selectedLanguage]);
+  }, [code, getAIAssistance, room]);
   
   const handleBack = useCallback(() => {
     onBack();
@@ -391,18 +422,12 @@ function CodeEditor({ initialRoomId, onBack }: {
     <>
       {/* Left Sidebar - Room List */}
       <div className="w-64 border-r p-4 flex flex-col">
-        <div className="mb-4 flex flex-col gap-2">
+        <div className="mb-4">
           <button
             onClick={handleBack}
-            className="w-full border border-gray-300 text-gray-700 rounded px-4 py-2"
+            className="w-full border border-gray-300 text-gray-700 rounded px-4 py-2 hover:bg-gray-50"
           >
             Back to Main Menu
-          </button>
-          <button
-            onClick={() => void handleCreateRoom()}
-            className="w-full bg-indigo-500 text-white rounded px-4 py-2"
-          >
-            New Room
           </button>
         </div>
         
@@ -413,6 +438,10 @@ function CodeEditor({ initialRoomId, onBack }: {
               {room.code}
             </p>
             <p className="text-xs text-center mt-1 text-gray-500">Share this code with collaborators</p>
+            <div className="mt-2 pt-2 border-t border-indigo-100">
+              <p className="font-semibold text-sm mb-1">Language:</p>
+              <p className="text-center font-medium">{room.language}</p>
+            </div>
           </div>
         )}
         
@@ -428,7 +457,8 @@ function CodeEditor({ initialRoomId, onBack }: {
                   : "hover:bg-gray-100"
               }`}
             >
-              {room.name}
+              <span className="block font-medium truncate">{room.name}</span>
+              <span className="block text-xs text-gray-500">{room.language}</span>
             </button>
           ))}
         </div>
@@ -436,12 +466,12 @@ function CodeEditor({ initialRoomId, onBack }: {
 
       {/* Main Editor */}
       <div className="flex-1 flex flex-col">
-        {selectedRoomId ? (
+        {selectedRoomId && room ? (
           <>
             <div className="flex-1">
               <Editor
                 height="100%"
-                language={selectedLanguage}
+                language={room.language}
                 value={code}
                 onChange={handleEditorChange}
                 onMount={(editor) => {
@@ -456,27 +486,21 @@ function CodeEditor({ initialRoomId, onBack }: {
             
             {/* Bottom Toolbar */}
             <div className="border-t p-4 flex items-center gap-4">
-              <select
-                value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value)}
-                className="border rounded px-2 py-1"
-              >
-                {languages.map((lang) => (
-                  <option key={lang.language} value={lang.language}>
-                    {lang.language}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center">
+                <span className="text-sm font-medium mr-2">Language:</span>
+                <span className="bg-gray-100 px-2 py-1 rounded text-sm">{room.language}</span>
+              </div>
+              <div className="flex-1"></div>
               <button
                 onClick={() => void handleRunCode()}
-                className="bg-green-500 text-white rounded px-4 py-1"
+                className="bg-green-500 hover:bg-green-600 text-white rounded px-4 py-1"
                 disabled={isLoading}
               >
                 Run
               </button>
               <button
                 onClick={() => void handleAIAssist()}
-                className="bg-purple-500 text-white rounded px-4 py-1"
+                className="bg-purple-500 hover:bg-purple-600 text-white rounded px-4 py-1"
                 disabled={isLoading}
               >
                 AI Assist
@@ -500,17 +524,21 @@ function CodeEditor({ initialRoomId, onBack }: {
       {/* Right Sidebar - Presence */}
       <div className="w-64 border-l p-4">
         <h3 className="font-semibold mb-4">Collaborators</h3>
-        <div className="space-y-2">
-          {presence?.map((user) => (
-            <div key={user._id} className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-              <span>{user.name}</span>
-              <span className="text-xs text-gray-500">
-                Line {user.cursor.line}
-              </span>
-            </div>
-          ))}
-        </div>
+        {presence && presence.length > 0 ? (
+          <div className="space-y-2">
+            {presence.map((user) => (
+              <div key={user._id} className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full" />
+                <span>{user.name}</span>
+                <span className="text-xs text-gray-500">
+                  Line {user.cursor.line}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">No active collaborators</p>
+        )}
       </div>
     </>
   );
