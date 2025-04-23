@@ -4,24 +4,36 @@ import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
 import { Toaster, toast } from "sonner";
 import Editor from "@monaco-editor/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { Id } from "../convex/_generated/dataModel";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
+
+// Debounce utility function
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
 
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen flex flex-col">
+      <div className="h-screen w-screen flex flex-col overflow-hidden">
         <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm p-4 flex justify-between items-center border-b">
           <h2 className="text-xl font-semibold accent-text">CodeCuisine</h2>
           <SignOutButton />
         </header>
-        <main className="flex-1 flex">
+        <main className="flex-1 flex overflow-hidden w-full">
           <Authenticated>
             <Routes>
               <Route path="/" element={<Navigate to="/room" replace />} />
-              <Route path="/room" element={<CodeRoom />} />
-              <Route path="/room/:roomCode" element={<RoomRouteHandler />} />
+              <Route path="/room" element={<div className="w-full h-full"><CodeRoom /></div>} />
+              <Route path="/room/:roomCode" element={<div className="w-full h-full"><RoomRouteHandler /></div>} />
               <Route path="*" element={<Navigate to="/room" replace />} />
             </Routes>
           </Authenticated>
@@ -189,7 +201,7 @@ function CodeRoom() {
   }, [navigate]);
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="w-full h-full flex flex-col overflow-hidden">
       {/* Create Room Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -301,7 +313,7 @@ function CodeRoom() {
         </div>
       )}
     
-      <div className="flex h-full">
+      <div className="flex h-full w-full">
         {/* Left side - Create/Join */}
         <div className="w-1/2 p-8 flex flex-col">
           <div className="text-center mb-8">
@@ -390,6 +402,7 @@ function CodeEditor({ initialRoomId, onBack }: {
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [localCode, setLocalCode] = useState(""); // Local state for immediate updates
   
   const navigate = useNavigate();
   const rooms = useQuery(api.rooms.list);
@@ -409,8 +422,9 @@ function CodeEditor({ initialRoomId, onBack }: {
   // Set code when room changes
   useEffect(() => {
     if (room) {
-      // Handle both new rooms with content field and old rooms without it
-      setCode(room.content || room.code || "");
+      const newCode = room.content || room.code || "";
+      setCode(newCode);
+      setLocalCode(newCode);
     }
   }, [room]);
   
@@ -421,24 +435,62 @@ function CodeEditor({ initialRoomId, onBack }: {
       void navigate('/room');
     }
   }, [selectedRoomId, room, isLoading, navigate]);
+  
+  // Debounced server update function
+  const debouncedUpdateCode = useMemo(
+    () =>
+      debounce((value: string) => {
+        if (!selectedRoomId) return;
+        void updateCode({ roomId: selectedRoomId, code: value });
+      }, 500), // 500ms debounce delay
+    [selectedRoomId, updateCode]
+  );
+
+  // Debounced cursor update function
+  const debouncedUpdatePresence = useMemo(
+    () =>
+      debounce((position: { lineNumber: number; column: number }) => {
+        if (!selectedRoomId) return;
+        void updatePresence({
+          roomId: selectedRoomId,
+          cursor: {
+            line: position.lineNumber,
+            column: position.column,
+          },
+        });
+      }, 100), // 100ms debounce delay for cursor
+    [selectedRoomId, updatePresence]
+  );
 
   const handleEditorChange = useCallback((value: string | undefined) => {
-    if (!value || !selectedRoomId) return;
+    if (!value) return;
+    setLocalCode(value); // Update local state immediately
     setCode(value);
-    void updateCode({ roomId: selectedRoomId, code: value });
-  }, [selectedRoomId, updateCode]);
+    debouncedUpdateCode(value); // Debounced server update
+  }, [debouncedUpdateCode]);
 
   const handleCursorChange = useCallback((editor: any) => {
     if (!selectedRoomId) return;
     const position = editor.getPosition();
-    void updatePresence({
-      roomId: selectedRoomId,
-      cursor: {
-        line: position.lineNumber,
-        column: position.column,
-      },
-    });
-  }, [selectedRoomId, updatePresence]);
+    debouncedUpdatePresence(position);
+  }, [selectedRoomId, debouncedUpdatePresence]);
+
+  // Enhanced editor options
+  const editorOptions = useMemo(() => ({
+    minimap: { enabled: false },
+    fontSize: 14,
+    wordWrap: 'on' as const,
+    smoothScrolling: true,
+    cursorSmoothCaretAnimation: 'on' as const,
+    cursorBlinking: 'smooth' as const,
+    renderWhitespace: 'selection' as const,
+    formatOnPaste: true,
+    formatOnType: true,
+    automaticLayout: true,
+    scrollBeyondLastLine: false,
+    renderLineHighlight: 'all' as const,
+    tabSize: 2,
+  }), []);
 
   const handleRunCode = useCallback(async () => {
     if (!code || !room) return;
@@ -484,10 +536,10 @@ function CodeEditor({ initialRoomId, onBack }: {
   }
 
   return (
-    <>
+    <div className="w-full h-full flex overflow-hidden">
       {/* Left Sidebar - Room List */}
-      <div className="w-64 border-r p-4 flex flex-col">
-        <div className="mb-4">
+      <div className="w-64 border-r flex flex-col overflow-hidden">
+        <div className="p-4 border-b">
           <button
             onClick={onBack}
             className="w-full border border-gray-300 text-gray-700 rounded px-4 py-2 hover:bg-gray-50"
@@ -497,7 +549,7 @@ function CodeEditor({ initialRoomId, onBack }: {
         </div>
         
         {room && (
-          <div className="mb-4 p-3 bg-indigo-50 rounded border border-indigo-100">
+          <div className="p-4 bg-indigo-50 border-b border-indigo-100">
             <p className="font-semibold mb-1">Room Code:</p>
             <p className="text-xl tracking-wide font-mono text-center bg-white p-1 rounded border">
               {room.code}
@@ -506,73 +558,76 @@ function CodeEditor({ initialRoomId, onBack }: {
           </div>
         )}
         
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto p-4">
           <p className="font-semibold mb-2 text-sm text-gray-500">Your Past Rooms:</p>
-          {rooms?.map((room) => (
-            <button
-              key={room._id}
-              onClick={() => void handleSelectRoom(room.code)}
-              className={`w-full text-left p-2 rounded mb-2 ${
-                selectedRoomId === room._id
-                  ? "bg-indigo-100"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              <span className="block font-medium truncate">{room.name}</span>
-              <span className="block text-xs text-gray-500">{room.language}</span>
-            </button>
-          ))}
+          <div className="space-y-2">
+            {rooms?.map((room) => (
+              <button
+                key={room._id}
+                onClick={() => void handleSelectRoom(room.code)}
+                className={`w-full text-left p-2 rounded ${
+                  selectedRoomId === room._id
+                    ? "bg-indigo-100"
+                    : "hover:bg-gray-100"
+                }`}
+              >
+                <span className="block font-medium truncate">{room.name}</span>
+                <span className="block text-xs text-gray-500">{room.language}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Main Editor */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {selectedRoomId && room ? (
-          <>
-            <div className="flex-1">
+          <div className="h-full grid grid-rows-2 overflow-hidden">
+            {/* Editor takes top 60% */}
+            <div className="overflow-hidden">
               <Editor
                 height="100%"
                 language={room.language}
-                value={code}
+                value={localCode}
                 onChange={handleEditorChange}
                 onMount={(editor) => {
                   editor.onDidChangeCursorPosition(() => handleCursorChange(editor));
                 }}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                }}
+                options={editorOptions}
+                loading={<div className="flex items-center justify-center h-full">Loading editor...</div>}
               />
             </div>
             
-            {/* Bottom Toolbar */}
-            <div className="border-t p-4 flex items-center gap-4">
-              <div className="flex items-center">
-                <span className="text-sm font-medium mr-2">Language:</span>
-                <span className="bg-gray-100 px-2 py-1 rounded text-sm">{room.language}</span>
+            {/* Output Panel takes bottom 40% */}
+            <div className="flex flex-col overflow-hidden border-t">
+              <div className="bg-gray-50 px-4 py-2 border-b flex items-center justify-between">
+                <span className="font-medium text-gray-700">Output</span>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center">
+                    <span className="text-sm font-medium mr-2">Language:</span>
+                    <span className="bg-gray-100 px-2 py-1 rounded text-sm">{room.language}</span>
+                  </div>
+                  <button
+                    onClick={() => void handleRunCode()}
+                    className="bg-green-500 hover:bg-green-600 text-white rounded px-4 py-1"
+                    disabled={isLoading}
+                  >
+                    Run
+                  </button>
+                  <button
+                    onClick={() => void handleAIAssist()}
+                    className="bg-purple-500 hover:bg-purple-600 text-white rounded px-4 py-1"
+                    disabled={isLoading}
+                  >
+                    AI Assist
+                  </button>
+                </div>
               </div>
-              <div className="flex-1"></div>
-              <button
-                onClick={() => void handleRunCode()}
-                className="bg-green-500 hover:bg-green-600 text-white rounded px-4 py-1"
-                disabled={isLoading}
-              >
-                Run
-              </button>
-              <button
-                onClick={() => void handleAIAssist()}
-                className="bg-purple-500 hover:bg-purple-600 text-white rounded px-4 py-1"
-                disabled={isLoading}
-              >
-                AI Assist
-              </button>
+              <div className="flex-1 overflow-auto p-4 font-mono whitespace-pre bg-gray-900 text-gray-100">
+                {output || "Run your code to see the output here..."}
+              </div>
             </div>
-            
-            {/* Output Panel */}
-            <div className="h-32 border-t overflow-auto p-4 font-mono whitespace-pre">
-              {output}
-            </div>
-          </>
+          </div>
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
@@ -583,24 +638,28 @@ function CodeEditor({ initialRoomId, onBack }: {
       </div>
 
       {/* Right Sidebar - Presence */}
-      <div className="w-64 border-l p-4">
-        <h3 className="font-semibold mb-4">Collaborators</h3>
-        {presence && presence.length > 0 ? (
-          <div className="space-y-2">
-            {presence.map((user) => (
-              <div key={user._id} className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full" />
-                <span>{user.name}</span>
-                <span className="text-xs text-gray-500">
-                  Line {user.cursor.line}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-500">No active collaborators</p>
-        )}
+      <div className="w-64 border-l flex flex-col overflow-hidden">
+        <div className="p-4 border-b">
+          <h3 className="font-semibold">Collaborators</h3>
+        </div>
+        <div className="flex-1 overflow-auto p-4">
+          {presence && presence.length > 0 ? (
+            <div className="space-y-2">
+              {presence.map((user) => (
+                <div key={user._id} className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  <span>{user.name}</span>
+                  <span className="text-xs text-gray-500">
+                    Line {user.cursor.line}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">No active collaborators</p>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   );
 }
