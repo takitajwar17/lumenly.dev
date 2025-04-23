@@ -507,7 +507,7 @@ function CodeEditor({ initialRoomId, onBack }: {
         )}
         
         <div className="flex-1 overflow-auto">
-          <p className="font-semibold mb-2 text-sm text-gray-500">Your Rooms:</p>
+          <p className="font-semibold mb-2 text-sm text-gray-500">Your Past Rooms:</p>
           {rooms?.map((room) => (
             <button
               key={room._id}
