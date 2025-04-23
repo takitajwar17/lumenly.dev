@@ -144,19 +144,13 @@ function CodeRoom() {
     
     setIsLoading(true);
     try {
-      const roomId = await createRoom({ 
+      const result = await createRoom({ 
         name: newRoomName.trim(), 
         language: newRoomLanguage 
       });
       
-      // Get the room to get its code
-      const roomsData = await rooms?.findFirst(r => r._id === roomId);
-      if (roomsData?.code) {
-        void navigate(`/room/${roomsData.code}`);
-      } else {
-        // Fallback to the main room page if we can't find the code
-        void navigate('/room');
-      }
+      // Navigate directly to the room using the returned code
+      void navigate(`/room/${result.code}`);
       
       setIsCreateModalOpen(false);
       toast.success("Room created successfully!");
@@ -165,7 +159,7 @@ function CodeRoom() {
     } finally {
       setIsLoading(false);
     }
-  }, [newRoomName, newRoomLanguage, createRoom, navigate, rooms]);
+  }, [newRoomName, newRoomLanguage, createRoom, navigate]);
   
   const handleJoinRoom = useCallback(async () => {
     if (joinCode.length !== 6) {

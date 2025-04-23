@@ -17,6 +17,10 @@ export const create = mutation({
     name: v.string(),
     language: v.string(),
   },
+  returns: v.object({
+    roomId: v.id("rooms"),
+    code: v.string(),
+  }),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
@@ -56,7 +60,7 @@ export const create = mutation({
       lastAccessTime: Date.now(),
     });
 
-    return roomId;
+    return { roomId, code: roomCode };
   },
 });
 
