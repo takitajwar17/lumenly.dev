@@ -2,13 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --color-light: #ffffff;
-  --color-dark: #171717;
+@layer utilities {
+  .accent-text {
+    @apply text-indigo-600 dark:text-indigo-400;
+  }
 }
 
-.accent-text {
-  @apply text-slate-600;
+@layer base {
+  :root {
+    @apply antialiased;
+  }
+  
+  body {
+    @apply text-gray-900 dark:text-white bg-white dark:bg-gray-900;
+  }
+  
+  *:focus {
+    @apply outline-none ring-2 ring-indigo-500/50 dark:ring-indigo-400/50;
+  }
+}
+
+@keyframes spin-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-spin-reverse {
+  animation: spin-reverse 1s linear infinite;
 }
 
 .button {

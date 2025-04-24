@@ -10,6 +10,7 @@ import {
   FiCpu,
 } from "react-icons/fi";
 import { IconType } from "react-icons";
+import { useTheme } from "./ThemeContext";
 
 export interface ReviewItem {
   title: string;
@@ -48,23 +49,23 @@ const ReviewSection = ({ title, items, icon: Icon, isExpanded, onToggle }: Revie
         onClick={onToggle}
         className={`flex items-center w-full px-4 py-3 text-sm font-medium text-left transition-colors duration-200 rounded-lg ${
           isExpanded 
-            ? 'bg-gray-800 text-gray-100' 
-            : 'text-gray-300 hover:bg-gray-800/50'
+            ? 'bg-indigo-50 dark:bg-gray-700 text-indigo-700 dark:text-gray-100' 
+            : 'bg-white dark:bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
         }`}
       >
-        <Icon className={`w-4 h-4 mr-3 ${isExpanded ? 'text-indigo-400' : 'text-gray-500'}`} />
+        <Icon className={`w-4 h-4 mr-3 ${isExpanded ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`} />
         <span className="flex-1">{title}</span>
         {items.length > 0 && (
           <span className={`px-2 py-0.5 text-xs rounded-full mr-2 ${
-            isExpanded ? 'bg-indigo-500/20 text-indigo-300' : 'bg-gray-700 text-gray-400'
+            isExpanded ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300' : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
           }`}>
             {items.length}
           </span>
         )}
         {isExpanded ? (
-          <FiChevronDown className="w-4 h-4 text-gray-400" />
+          <FiChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
         ) : (
-          <FiChevronRight className="w-4 h-4 text-gray-400" />
+          <FiChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
         )}
       </button>
 
@@ -73,37 +74,37 @@ const ReviewSection = ({ title, items, icon: Icon, isExpanded, onToggle }: Revie
           {items.map((item, index) => (
             <div
               key={index}
-              className="p-4 bg-gray-800/30 rounded-lg border border-gray-700/50 hover:border-gray-600/50 transition-colors"
+              className="p-4 bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-600/50 hover:border-indigo-200 dark:hover:border-gray-500/50 transition-colors shadow-sm"
             >
               <div className="flex items-start justify-between gap-4">
-                <h3 className="text-sm font-medium text-gray-100 leading-tight">
+                <h3 className="text-sm font-medium text-gray-800 dark:text-gray-100 leading-tight">
                   {item.title}
                 </h3>
                 {item.severity && (
                   <span
                     className={`px-2 py-0.5 text-xs rounded-full font-medium ${
                       item.severity === "high"
-                        ? "bg-red-500/20 text-red-300 border border-red-500/30"
+                        ? "bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-500/30"
                         : item.severity === "medium"
-                        ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
-                        : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                        ? "bg-yellow-50 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-500/30"
+                        : "bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30"
                     }`}
                   >
                     {item.severity}
                   </span>
                 )}
               </div>
-              <p className="mt-2 text-sm text-gray-400 leading-relaxed">
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                 {item.description}
               </p>
               {item.code && (
                 <div className="mt-3">
                   <div className="relative">
-                    <pre className="p-3 bg-gray-900/50 rounded-lg overflow-x-auto border border-gray-800">
-                      <code className="text-sm text-gray-200 font-mono">{item.code}</code>
+                    <pre className="p-3 bg-gray-50 dark:bg-black/30 rounded-lg overflow-x-auto border border-gray-200 dark:border-gray-700">
+                      <code className="text-sm text-gray-800 dark:text-gray-200 font-mono">{item.code}</code>
                     </pre>
                     {item.lineNumber && (
-                      <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 text-xs bg-gray-800/90 rounded-full text-gray-400 border border-gray-700">
+                      <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 text-xs bg-white/90 dark:bg-black/50 rounded-full text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
                         <FiCode className="w-3 h-3" />
                         <span>Line {item.lineNumber}</span>
                       </div>
@@ -121,12 +122,13 @@ const ReviewSection = ({ title, items, icon: Icon, isExpanded, onToggle }: Revie
 
 const AIReviewPanel = ({ review }: AIReviewPanelProps) => {
   const [expandedSection, setExpandedSection] = useState<string | null>("issues");
+  const { theme } = useTheme();
 
   if (!review || typeof review !== "object") {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-900 text-gray-400">
+      <div className="h-full flex items-center justify-center bg-white dark:bg-gray-950 text-gray-500 dark:text-gray-400 transition-colors">
         <div className="text-center space-y-2">
-          <FiCpu className="w-8 h-8 mx-auto mb-3 text-gray-600" />
+          <FiCpu className="w-8 h-8 mx-auto mb-3 text-gray-400 dark:text-gray-700" />
           <p className="text-lg font-medium">No review available</p>
           <p className="text-sm text-gray-500">Run the AI review to get feedback on your code</p>
         </div>
@@ -141,18 +143,18 @@ const AIReviewPanel = ({ review }: AIReviewPanelProps) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-900 text-gray-100">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors">
       {/* Header */}
-      <div className="flex-none px-6 py-4 bg-gray-800/50 border-b border-gray-700/50">
+      <div className="flex-none px-6 py-4 bg-white dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800/50 transition-colors">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-medium text-gray-100">AI Code Review</h2>
-            <p className="text-sm text-gray-400 mt-0.5">
+            <h2 className="text-lg font-medium text-gray-800 dark:text-gray-100 transition-colors">AI Code Review</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">
               Automated analysis and suggestions for your code
             </p>
           </div>
           {review._metadata && (
-            <div className="flex items-center gap-4 text-sm text-gray-400">
+            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 transition-colors">
               <div className="flex items-center gap-2">
                 <FiCpu className="w-4 h-4" />
                 <span>{review._metadata.model}</span>
@@ -198,8 +200,8 @@ const AIReviewPanel = ({ review }: AIReviewPanelProps) => {
           )}
           {issues.length === 0 && suggestions.length === 0 && improvements.length === 0 && (
             <div className="text-center py-12">
-              <FiCode className="w-12 h-12 mx-auto mb-4 text-gray-700" />
-              <p className="text-lg font-medium text-gray-400">All Clear!</p>
+              <FiCode className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-800 transition-colors" />
+              <p className="text-lg font-medium text-gray-500 dark:text-gray-400 transition-colors">All Clear!</p>
               <p className="text-sm text-gray-500 mt-1">No issues or suggestions found in your code</p>
             </div>
           )}

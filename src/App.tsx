@@ -9,6 +9,8 @@ import { Id } from "../convex/_generated/dataModel";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import AIReviewPanel from "./AIReviewPanel";
 import { AIReview } from "./AIReviewPanel";
+import { ThemeProvider, useTheme } from "./ThemeContext";
+import { FiMoon, FiSun, FiChevronLeft, FiPlay, FiCode, FiCpu, FiUsers, FiClipboard, FiTrash2, FiCopy } from "react-icons/fi";
 
 // Debounce utility function
 function debounce<T extends (...args: any[]) => any>(
@@ -24,11 +26,40 @@ function debounce<T extends (...args: any[]) => any>(
 
 export default function App() {
   return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
+function AppContent() {
+  const { theme, toggleTheme } = useTheme();
+  
+  return (
     <BrowserRouter>
-      <div className="h-screen w-screen flex flex-col overflow-hidden">
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm p-4 flex justify-between items-center border-b">
-          <h2 className="text-xl font-semibold accent-text">CodeCuisine</h2>
-          <SignOutButton />
+      <div className={`h-screen w-screen flex flex-col overflow-hidden ${theme === 'dark' ? 'dark' : ''}`}>
+        <header className="sticky top-0 z-10 bg-white dark:bg-gray-900 backdrop-blur-sm p-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-800 transition-colors">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">CodeCuisine</h2>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={toggleTheme}
+              className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? (
+                <>
+                  <FiSun className="w-4 h-4" />
+                  <span className="text-sm font-medium">Light</span>
+                </>
+              ) : (
+                <>
+                  <FiMoon className="w-4 h-4" />
+                  <span className="text-sm font-medium">Dark</span>
+                </>
+              )}
+            </button>
+            <SignOutButton />
+          </div>
         </header>
         <main className="flex-1 flex overflow-hidden w-full">
           <Authenticated>
@@ -40,18 +71,18 @@ export default function App() {
             </Routes>
           </Authenticated>
           <Unauthenticated>
-            <div className="flex-1 flex items-center justify-center p-8">
+            <div className="flex-1 flex items-center justify-center p-8 bg-white dark:bg-gray-900 transition-colors">
               <div className="w-full max-w-md mx-auto">
                 <div className="text-center mb-8">
-                  <h1 className="text-5xl font-bold accent-text mb-4">CodeCuisine</h1>
-                  <p className="text-xl text-slate-600">Sign in to start coding</p>
+                  <h1 className="text-5xl font-bold text-indigo-600 dark:text-indigo-400 mb-4 transition-colors">CodeCuisine</h1>
+                  <p className="text-xl text-slate-600 dark:text-slate-400 transition-colors">Sign in to start coding</p>
                 </div>
                 <SignInForm />
               </div>
             </div>
           </Unauthenticated>
         </main>
-        <Toaster />
+        <Toaster theme={theme} />
       </div>
     </BrowserRouter>
   );
@@ -96,10 +127,15 @@ function RoomRouteHandler() {
   
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-900 transition-colors">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
-          <p className="text-lg">Loading room...</p>
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-t-2 border-b-2 border-indigo-500 animate-spin"></div>
+            <div className="absolute inset-3 rounded-full border-t-2 border-b-2 border-indigo-400 animate-spin-reverse" style={{ animationDuration: '1.5s' }}></div>
+            <div className="absolute inset-6 rounded-full border-t-2 border-indigo-300 animate-spin" style={{ animationDuration: '2s' }}></div>
+          </div>
+          <p className="text-lg font-medium text-gray-800 dark:text-gray-200 transition-colors">Loading room...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">Connecting to {roomCode}</p>
         </div>
       </div>
     );
@@ -130,6 +166,7 @@ function CodeRoom() {
   const rooms = useQuery(api.rooms.list);
   const createRoom = useMutation(api.rooms.create);
   const joinRoomByCode = useMutation(api.rooms.joinByCode);
+  const { theme } = useTheme();
   
   // Fetch available languages
   useEffect(() => {
@@ -203,16 +240,16 @@ function CodeRoom() {
   }, [navigate]);
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden">
+    <div className="w-full h-full flex flex-col overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors">
       {/* Create Room Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Create New Room</h2>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-xl border border-gray-200 dark:border-gray-700 transition-colors">
+            <h2 className="text-xl font-semibold mb-5 text-gray-900 dark:text-white transition-colors">Create New Room</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label htmlFor="roomName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="roomName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
                   Room Name
                 </label>
                 <input
@@ -221,31 +258,31 @@ function CodeRoom() {
                   value={newRoomName}
                   onChange={(e) => setNewRoomName(e.target.value)}
                   placeholder="Enter room name"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-3 py-2.5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-colors"
                   disabled={isLoading}
                   autoFocus
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
                   Programming Language
                 </label>
                 
                 {!showAllLanguages ? (
                   <>
-                    <div className="grid grid-cols-3 gap-2 mb-2">
+                    <div className="grid grid-cols-3 gap-2 mb-3">
                       {POPULAR_LANGUAGES.map(lang => (
                         <button
                           key={lang.id}
                           type="button"
                           onClick={() => setNewRoomLanguage(lang.id)}
-                          className={`p-2 rounded border ${newRoomLanguage === lang.id 
-                            ? 'bg-indigo-100 border-indigo-300 text-indigo-700' 
-                            : 'border-gray-200 hover:bg-gray-50'}`}
+                          className={`p-2 rounded-lg border transition-all ${newRoomLanguage === lang.id 
+                            ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 shadow-sm' 
+                            : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300'}`}
                         >
                           <div className="flex flex-col items-center">
-                            <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded mb-1">
+                            <div className="w-9 h-9 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg mb-1.5 text-xs font-semibold">
                               {lang.icon}
                             </div>
                             <span className="text-xs">{lang.name}</span>
@@ -256,7 +293,7 @@ function CodeRoom() {
                     <button
                       type="button"
                       onClick={() => setShowAllLanguages(true)}
-                      className="text-sm text-indigo-600 hover:text-indigo-800"
+                      className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
                     >
                       Show all languages
                     </button>
@@ -266,7 +303,7 @@ function CodeRoom() {
                     <select
                       value={newRoomLanguage}
                       onChange={(e) => setNewRoomLanguage(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-3 py-2.5 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-colors"
                       disabled={isLoading}
                     >
                       {languages.length > 0 ? (
@@ -286,7 +323,7 @@ function CodeRoom() {
                     <button
                       type="button"
                       onClick={() => setShowAllLanguages(false)}
-                      className="text-sm text-indigo-600 hover:text-indigo-800 mt-1"
+                      className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 mt-2 transition-colors"
                     >
                       Show popular languages
                     </button>
@@ -295,17 +332,17 @@ function CodeRoom() {
               </div>
             </div>
             
-            <div className="mt-6 flex justify-end space-x-3">
+            <div className="mt-7 flex justify-end space-x-3">
               <button
                 onClick={handleCloseModal}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700"
+                className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-300 font-medium transition-colors"
                 disabled={isLoading}
               >
                 Cancel
               </button>
               <button
                 onClick={() => void handleCreateRoom()}
-                className="px-4 py-2 bg-indigo-500 text-white rounded-md"
+                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isLoading}
               >
                 {isLoading ? 'Creating...' : 'Create Room'}
@@ -317,26 +354,26 @@ function CodeRoom() {
     
       <div className="flex h-full w-full">
         {/* Left side - Create/Join */}
-        <div className="w-1/2 p-8 flex flex-col">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold accent-text mb-4">Collaborative Coding</h1>
-            <p className="text-gray-600">Create or join a room to start coding together</p>
+        <div className="w-1/2 p-8 flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="text-center mb-10">
+            <h1 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-4 transition-colors">Collaborative Coding</h1>
+            <p className="text-gray-600 dark:text-gray-400 transition-colors">Create or join a room to start coding together</p>
           </div>
           
           <div className="space-y-8 flex-1 flex flex-col justify-center max-w-md mx-auto w-full">
             <button
               onClick={handleCreateRoomClick}
-              className="w-full bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg px-4 py-4 text-lg font-medium transition-colors"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl px-5 py-4 text-lg font-medium transition-colors shadow-md"
             >
               Create a Room
             </button>
             
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
+                <div className="w-full border-t border-gray-300 dark:border-gray-700 transition-colors"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">OR</span>
+                <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 transition-colors">OR</span>
               </div>
             </div>
             
@@ -346,12 +383,12 @@ function CodeRoom() {
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
                 placeholder="Enter 6-character room code"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-lg tracking-widest uppercase"
+                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-xl px-4 py-3.5 text-center text-lg tracking-widest uppercase text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-colors"
                 maxLength={6}
               />
               <button
                 onClick={() => void handleJoinRoom()}
-                className="w-full bg-green-500 hover:bg-green-600 text-white rounded-lg px-4 py-3 text-lg font-medium transition-colors"
+                className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-xl px-4 py-3.5 text-lg font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={joinCode.length !== 6 || isLoading}
               >
                 {isLoading ? 'Joining...' : 'Join Room'}
@@ -361,33 +398,33 @@ function CodeRoom() {
         </div>
         
         {/* Right side - Recent Rooms */}
-        <div className="w-1/2 border-l p-8 bg-gray-50">
-          <h2 className="text-xl font-semibold mb-4">Your Recent Rooms</h2>
+        <div className="w-1/2 p-8 bg-gray-50 dark:bg-gray-900/30 transition-colors">
+          <h2 className="text-xl font-semibold mb-5 text-gray-900 dark:text-white transition-colors">Your Recent Rooms</h2>
           
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 dark:border-indigo-400 transition-colors"></div>
             </div>
           ) : rooms && rooms.length > 0 ? (
-            <div className="space-y-2 overflow-auto max-h-[500px] pr-2">
+            <div className="space-y-3 overflow-auto max-h-[500px] pr-2 pb-4">
               {rooms.map((room) => (
                 <button
                   key={room._id}
                   onClick={() => void handleSelectRoom(room.code)}
-                  className="w-full text-left p-4 rounded border bg-white hover:bg-indigo-50 transition-colors flex justify-between items-center"
+                  className="w-full text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-200 dark:hover:border-indigo-700 transition-all shadow-sm hover:shadow flex justify-between items-center"
                 >
                   <div>
-                    <p className="font-medium">{room.name}</p>
-                    <p className="text-sm text-gray-500">{room.language}</p>
+                    <p className="font-medium text-gray-900 dark:text-white transition-colors">{room.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors">{room.language}</p>
                   </div>
-                  <span className="text-indigo-500 text-sm font-medium">Open</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 text-sm font-medium transition-colors">Open</span>
                 </button>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-500">
-              <p>No recent rooms found</p>
-              <p className="text-sm mt-1">Create a new room to get started</p>
+            <div className="text-center py-12 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors">
+              <p className="text-gray-600 dark:text-gray-400 transition-colors">No recent rooms found</p>
+              <p className="text-sm mt-1 text-gray-500 dark:text-gray-500 transition-colors">Create a new room to get started</p>
             </div>
           )}
         </div>
@@ -416,6 +453,7 @@ function CodeEditor({ initialRoomId, onBack }: {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const rooms = useQuery(api.rooms.list);
   const room = useQuery(
     api.rooms.get,
@@ -436,6 +474,7 @@ function CodeEditor({ initialRoomId, onBack }: {
       const newCode = room.content || room.code || "";
       setCode(newCode);
       setLocalCode(newCode);
+      setLastSaved(new Date()); // Set initial save time
     }
   }, [room]);
   
@@ -453,6 +492,7 @@ function CodeEditor({ initialRoomId, onBack }: {
       debounce((value: string) => {
         if (!selectedRoomId) return;
         void updateCode({ roomId: selectedRoomId, code: value });
+        setLastSaved(new Date());
       }, 500), // 500ms debounce delay
     [selectedRoomId, updateCode]
   );
@@ -521,14 +561,15 @@ function CodeEditor({ initialRoomId, onBack }: {
   const handleRunCode = useCallback(async () => {
     if (!code || !room) return;
     setIsRunningCode(true);
+    setActiveTab('output');
     try {
       const result = await executeCode({ language: room.language, code });
       setOutput(result.run.output);
       setExecutionTimestamp(new Date());
       setExecutionTime(result.run.time);
-      setActiveTab('output');
     } catch (error) {
       setOutput("Error executing code");
+      toast.error("Failed to execute code");
     } finally {
       setIsRunningCode(false);
     }
@@ -537,11 +578,11 @@ function CodeEditor({ initialRoomId, onBack }: {
   const handleAIAssist = useCallback(async () => {
     if (!code || !room) return;
     setIsGettingReview(true);
+    setActiveTab('review');
     try {
       const response = await getAIAssistance({ code, language: room.language });
       // The response is already a JSON string from the backend
       setReview(JSON.parse(response));
-      setActiveTab('review');
     } catch (error) {
       toast.error("Failed to get AI assistance");
       setReview(null);
@@ -556,73 +597,90 @@ function CodeEditor({ initialRoomId, onBack }: {
     }
   }, [navigate]);
 
+  const handleCopyCode = useCallback(() => {
+    void navigator.clipboard.writeText(code);
+    toast.success("Code copied to clipboard");
+  }, [code]);
+
+  const handleClearCode = useCallback(() => {
+    if (window.confirm("Are you sure you want to clear all code?")) {
+      setLocalCode("");
+      setCode("");
+      debouncedUpdateCode("");
+      toast.info("Code cleared");
+    }
+  }, [debouncedUpdateCode]);
+
   if (isLoading && !room) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-900 transition-colors">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
-          <p className="text-lg">Loading room...</p>
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-t-2 border-b-2 border-indigo-500 animate-spin"></div>
+            <div className="absolute inset-3 rounded-full border-t-2 border-b-2 border-indigo-400 animate-spin-reverse" style={{ animationDuration: '1.5s' }}></div>
+            <div className="absolute inset-6 rounded-full border-t-2 border-indigo-300 animate-spin" style={{ animationDuration: '2s' }}></div>
+          </div>
+          <p className="text-lg font-medium text-gray-800 dark:text-gray-200 transition-colors">Loading room...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">Please wait</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full flex overflow-hidden bg-gray-50">
+    <div className="w-full h-full flex overflow-hidden bg-white dark:bg-gray-900 transition-colors">
       {/* Left Sidebar - Room List */}
-      <div className="w-72 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-gray-200 bg-gray-50">
+      <div className="w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-colors">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 transition-colors">
           <button
             onClick={onBack}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-gray-700 bg-white rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
+            <FiChevronLeft className="w-4 h-4" />
             <span className="font-medium">Back to Main Menu</span>
           </button>
         </div>
         
         {room && (
-          <div className="p-4 bg-indigo-50/50 border-b border-indigo-100">
+          <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/10 border-b border-indigo-100 dark:border-indigo-900/20 transition-colors">
             <div className="text-center">
-              <p className="text-sm font-medium text-indigo-700 mb-1.5">Room Code</p>
-              <div className="bg-white rounded-lg border-2 border-indigo-200 px-3 py-2">
-                <p className="text-xl tracking-wider font-mono font-semibold text-indigo-600">
-              {room.code}
-            </p>
+              <p className="text-sm font-medium text-indigo-700 dark:text-indigo-400 mb-1.5 transition-colors">Room Code</p>
+              <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 px-3 py-2 transition-colors">
+                <p className="text-xl tracking-wider font-mono font-semibold text-indigo-600 dark:text-indigo-400 transition-colors">
+                  {room.code}
+                </p>
               </div>
-              <p className="text-xs text-indigo-600/70 mt-2">Share this code with collaborators</p>
+              <p className="text-xs text-indigo-600/70 dark:text-indigo-400/70 mt-2 transition-colors">Share this code with collaborators</p>
             </div>
           </div>
         )}
         
         <div className="flex-1 overflow-auto">
           <div className="p-4">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Your Past Rooms</h3>
-          <div className="space-y-2">
-            {rooms?.map((room) => (
-              <button
-                key={room._id}
-                onClick={() => void handleSelectRoom(room.code)}
-                  className={`w-full text-left p-3 rounded-lg transition-colors ${
-                  selectedRoomId === room._id
-                      ? "bg-indigo-50 border-2 border-indigo-200"
-                      : "hover:bg-gray-50 border border-gray-200"
+            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 transition-colors">Your Past Rooms</h3>
+            <div className="space-y-2">
+              {rooms?.map((room) => (
+                <button
+                  key={room._id}
+                  onClick={() => void handleSelectRoom(room.code)}
+                  className={`w-full text-left p-3 rounded-lg transition-all ${
+                    selectedRoomId === room._id
+                      ? "bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-200 dark:border-indigo-700"
+                      : "hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-gray-200 dark:border-gray-700"
                   }`}
                 >
                   <span className={`block font-medium truncate ${
-                    selectedRoomId === room._id ? "text-indigo-700" : "text-gray-700"
-                  }`}>
+                    selectedRoomId === room._id ? "text-indigo-700 dark:text-indigo-400" : "text-gray-700 dark:text-gray-300"
+                  } transition-colors`}>
                     {room.name}
                   </span>
                   <span className={`block text-xs mt-0.5 ${
-                    selectedRoomId === room._id ? "text-indigo-500" : "text-gray-500"
-                  }`}>
+                    selectedRoomId === room._id ? "text-indigo-500 dark:text-indigo-300" : "text-gray-500 dark:text-gray-400"
+                  } transition-colors`}>
                     {room.language}
                   </span>
-              </button>
-            ))}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -633,14 +691,14 @@ function CodeEditor({ initialRoomId, onBack }: {
         {selectedRoomId && room ? (
           <>
             {/* Header */}
-            <div className="flex-none border-b border-gray-200">
+            <div className="flex-none border-b border-gray-200 dark:border-gray-700 transition-colors">
               {/* Top bar with file info and actions */}
-              <div className="flex items-center justify-between px-6 py-3 bg-white">
+              <div className="flex items-center justify-between px-6 py-3 bg-white dark:bg-gray-800 transition-colors">
                 <div className="flex items-center space-x-6">
-                  <h2 className="text-lg font-semibold text-gray-900">{room.name}</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white transition-colors">{room.name}</h2>
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-500">Language:</span>
-                    <span className="text-sm font-medium px-2 py-1 bg-gray-100 rounded-md text-gray-700">
+                    <span className="text-sm text-gray-500 dark:text-gray-400 transition-colors">Language:</span>
+                    <span className="text-sm font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-700 dark:text-gray-300 transition-colors">
                       {room.language}
                     </span>
                   </div>
@@ -648,40 +706,33 @@ function CodeEditor({ initialRoomId, onBack }: {
                 
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => {
-                      void navigator.clipboard.writeText(code);
-                      toast.success("Code copied to clipboard");
-                    }}
-                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                    onClick={handleCopyCode}
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     title="Copy code"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
+                    <FiCopy className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={() => setLocalCode("")}
-                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                    onClick={handleClearCode}
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     title="Clear code"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <FiTrash2 className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
               {/* Action toolbar */}
-              <div className="flex items-center justify-between px-6 py-2 bg-gray-50/80 border-t border-gray-100">
+              <div className="flex items-center justify-between px-6 py-2 bg-gray-50/80 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700/50 transition-colors">
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={() => void handleRunCode()}
                     disabled={isRunningCode}
                     className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${
                       isRunningCode
-                        ? 'bg-blue-50 text-blue-400 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
-                    }`}
+                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-400 dark:text-blue-300 cursor-not-allowed'
+                        : 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700'
+                    } transition-colors`}
                   >
                     {isRunningCode ? (
                       <>
@@ -693,10 +744,7 @@ function CodeEditor({ initialRoomId, onBack }: {
                       </>
                     ) : (
                       <>
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <FiPlay className="w-4 h-4 mr-2" />
                         <span>Run Code</span>
                       </>
                     )}
@@ -707,9 +755,9 @@ function CodeEditor({ initialRoomId, onBack }: {
                     disabled={isGettingReview}
                     className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${
                       isGettingReview
-                        ? 'bg-purple-50 text-purple-400 cursor-not-allowed'
-                        : 'bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800'
-                    }`}
+                        ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-400 dark:text-purple-300 cursor-not-allowed'
+                        : 'bg-purple-600 dark:bg-purple-500 text-white hover:bg-purple-700 dark:hover:bg-purple-600 active:bg-purple-800 dark:active:bg-purple-700'
+                    } transition-colors`}
                   >
                     {isGettingReview ? (
                       <>
@@ -721,27 +769,23 @@ function CodeEditor({ initialRoomId, onBack }: {
                       </>
                     ) : (
                       <>
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
+                        <FiCpu className="w-4 h-4 mr-2" />
                         <span>AI Review</span>
                       </>
                     )}
                   </button>
                 </div>
 
-                <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="flex items-center bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 transition-colors">
                   <button
                     onClick={() => setActiveTab('editor')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm transition-colors ${
                       activeTab === 'editor'
-                        ? 'bg-indigo-50 text-indigo-700 font-medium'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium'
+                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600'
                     }`}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                    </svg>
+                    <FiCode className="w-4 h-4" />
                     <span>Editor</span>
                   </button>
 
@@ -749,16 +793,14 @@ function CodeEditor({ initialRoomId, onBack }: {
                     onClick={() => setActiveTab('output')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm transition-colors ${
                       activeTab === 'output'
-                        ? 'bg-indigo-50 text-indigo-700 font-medium'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
+                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium'
+                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    } relative`}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
+                    <FiPlay className="w-4 h-4" />
                     <span>Output</span>
                     {output && activeTab !== 'output' && (
-                      <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse" />
                     )}
                   </button>
 
@@ -766,16 +808,14 @@ function CodeEditor({ initialRoomId, onBack }: {
                     onClick={() => setActiveTab('review')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm transition-colors ${
                       activeTab === 'review'
-                        ? 'bg-indigo-50 text-indigo-700 font-medium'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
+                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium'
+                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    } relative`}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
+                    <FiCpu className="w-4 h-4" />
                     <span>Review</span>
                     {review && activeTab !== 'review' && (
-                      <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-purple-500 dark:bg-purple-400 animate-pulse" />
                     )}
                   </button>
                 </div>
@@ -827,7 +867,7 @@ function CodeEditor({ initialRoomId, onBack }: {
                       cursorBlinking: 'smooth',
                       cursorSmoothCaretAnimation: 'on',
                       smoothScrolling: true,
-                      theme: "vs-dark",
+                      theme: theme === 'dark' ? "vs-dark" : "vs-light",
                       automaticLayout: true,
                       tabSize: 2,
                     }}
@@ -838,20 +878,17 @@ function CodeEditor({ initialRoomId, onBack }: {
               {activeTab === 'output' && (
                 <div className="absolute inset-0">
                   <div className="h-full flex flex-col">
-                    <div className="flex-1 overflow-auto font-mono text-sm bg-gray-900">
+                    <div className="flex-1 overflow-auto font-mono text-sm bg-gray-50 dark:bg-gray-950 transition-colors">
                       {output ? (
                         <div className="p-6">
-                          <pre className="whitespace-pre-wrap break-words text-gray-100">
+                          <pre className="whitespace-pre-wrap break-words text-gray-800 dark:text-gray-100 transition-colors">
                             {output}
                           </pre>
                         </div>
                       ) : (
-                        <div className="h-full flex items-center justify-center text-gray-400">
+                        <div className="h-full flex items-center justify-center text-gray-500 dark:text-gray-400 transition-colors">
                           <div className="text-center">
-                            <svg className="w-12 h-12 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                            <FiPlay className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-600 transition-colors" />
                             <p className="text-lg font-medium">No Output Yet</p>
                             <p className="text-sm mt-1">Run your code to see the output here</p>
                           </div>
@@ -859,7 +896,7 @@ function CodeEditor({ initialRoomId, onBack }: {
                       )}
                     </div>
                     {executionTimestamp && (
-                      <div className="flex items-center justify-between px-6 py-3 bg-gray-800 text-gray-400 text-xs border-t border-gray-700">
+                      <div className="flex items-center justify-between px-6 py-3 bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-500 text-xs border-t border-gray-200 dark:border-gray-800 transition-colors">
                         <div className="flex items-center space-x-6">
                           <div className="flex items-center space-x-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -892,31 +929,31 @@ function CodeEditor({ initialRoomId, onBack }: {
               )}
 
               {isLoading && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center">
                   <div className="text-center">
                     <div className="w-16 h-16 mx-auto mb-4 relative">
-                      <div className="absolute inset-0 rounded-full border-t-2 border-b-2 border-indigo-500 animate-spin"></div>
-                      <div className="absolute inset-2 rounded-full border-t-2 border-b-2 border-indigo-400 animate-spin-reverse"></div>
-                      <div className="absolute inset-4 rounded-full border-t-2 border-b-2 border-indigo-300 animate-spin"></div>
+                      <div className="absolute inset-0 rounded-full border-t-2 border-b-2 border-indigo-500 dark:border-indigo-400 animate-spin"></div>
+                      <div className="absolute inset-2 rounded-full border-t-2 border-b-2 border-indigo-400 dark:border-indigo-300 animate-spin-reverse"></div>
+                      <div className="absolute inset-4 rounded-full border-t-2 border-b-2 border-indigo-300 dark:border-indigo-200 animate-spin"></div>
                     </div>
-                    <p className="text-lg font-medium text-gray-900">Loading room...</p>
-                    <p className="text-sm text-gray-500 mt-1">Please wait</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-white transition-colors">Loading room...</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">Please wait</p>
                   </div>
                 </div>
               )}
 
               {/* Footer */}
-              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between h-8 px-6 bg-gray-50 text-xs border-t border-gray-200">
-                <div className="flex items-center divide-x divide-gray-300">
+              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between h-8 px-6 bg-gray-50 dark:bg-gray-800 text-xs border-t border-gray-200 dark:border-gray-700 transition-colors">
+                <div className="flex items-center divide-x divide-gray-300 dark:divide-gray-600 transition-colors">
                   {activeTab === 'editor' && (
                     <>
-                      <div className="pr-4 text-gray-600">
+                      <div className="pr-4 text-gray-600 dark:text-gray-400 transition-colors">
                         Ln {cursorPosition.line}, Col {cursorPosition.column}
                       </div>
-                      <div className="px-4 text-gray-600">{wordCount} words</div>
-                      <div className="px-4 font-medium text-gray-700">{room.language}</div>
+                      <div className="px-4 text-gray-600 dark:text-gray-400 transition-colors">{wordCount} words</div>
+                      <div className="px-4 font-medium text-gray-700 dark:text-gray-300 transition-colors">{room.language}</div>
                       {lastSaved && (
-                        <div className="pl-4 text-gray-500">
+                        <div className="pl-4 text-gray-500 dark:text-gray-400 transition-colors">
                           Last saved: {lastSaved.toLocaleTimeString()}
                         </div>
                       )}
@@ -925,12 +962,12 @@ function CodeEditor({ initialRoomId, onBack }: {
                   
                   {activeTab === 'output' && executionTimestamp && (
                     <>
-                      <div className="pr-4 text-gray-600">{room.language}</div>
-                      <div className="px-4 text-gray-600">
+                      <div className="pr-4 text-gray-600 dark:text-gray-400 transition-colors">{room.language}</div>
+                      <div className="px-4 text-gray-600 dark:text-gray-400 transition-colors">
                         Executed: {executionTimestamp.toLocaleTimeString()}
                       </div>
-                          {executionTime && (
-                        <div className="pl-4 text-gray-600">
+                      {executionTime && (
+                        <div className="pl-4 text-gray-600 dark:text-gray-400 transition-colors">
                           Duration: {executionTime}ms
                         </div>
                       )}
@@ -939,30 +976,30 @@ function CodeEditor({ initialRoomId, onBack }: {
                   
                   {activeTab === 'review' && review && (
                     <>
-                      <div className="pr-4 text-gray-600">
+                      <div className="pr-4 text-gray-600 dark:text-gray-400 transition-colors">
                         Issues: {review.issues.length}
                       </div>
-                      <div className="px-4 text-gray-600">
+                      <div className="px-4 text-gray-600 dark:text-gray-400 transition-colors">
                         Suggestions: {review.suggestions.length}
                       </div>
-                      <div className="px-4 text-gray-600">
+                      <div className="px-4 text-gray-600 dark:text-gray-400 transition-colors">
                         Improvements: {review.improvements.length}
                       </div>
                       {review.issues.length > 0 && (
                         <div className="pl-4 flex items-center gap-2">
-                          <span className="text-gray-600">Severity:</span>
+                          <span className="text-gray-600 dark:text-gray-400 transition-colors">Severity:</span>
                           {review.issues.some(i => i.severity === 'high') && (
-                            <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-medium">
+                            <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-[10px] font-medium transition-colors">
                               High
                             </span>
                           )}
                           {review.issues.some(i => i.severity === 'medium') && (
-                            <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded text-[10px] font-medium">
+                            <span className="px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded text-[10px] font-medium transition-colors">
                               Medium
                             </span>
                           )}
                           {review.issues.some(i => i.severity === 'low') && (
-                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-medium">
+                            <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-[10px] font-medium transition-colors">
                               Low
                             </span>
                           )}
@@ -972,20 +1009,18 @@ function CodeEditor({ initialRoomId, onBack }: {
                   )}
                 </div>
                 
-                <div className="flex items-center space-x-4 text-gray-500">
+                <div className="flex items-center space-x-4 text-gray-500 dark:text-gray-400 transition-colors">
                   {activeTab === 'review' && review?._metadata ? (
                     <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                        </svg>
+                      <div className="flex items-center gap-2">
+                        <FiCpu className="w-3.5 h-3.5" />
                         <span>{review._metadata.model}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                          <span>{new Date(review._metadata.created * 1000).toLocaleTimeString()}</span>
+                        <span>{new Date(review._metadata.created * 1000).toLocaleTimeString()}</span>
                       </div>
                     </div>
                   ) : (
@@ -996,13 +1031,13 @@ function CodeEditor({ initialRoomId, onBack }: {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
+          <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-800 transition-colors">
             <div className="text-center max-w-md mx-auto px-6">
-              <svg className="w-16 h-16 mx-auto mb-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-16 h-16 mx-auto mb-6 text-gray-400 dark:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Select a Room</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 transition-colors">Select a Room</h3>
+              <p className="text-gray-600 dark:text-gray-400 transition-colors">
                 Choose a room from the sidebar to start coding or create a new one from the main menu
               </p>
             </div>
@@ -1011,9 +1046,12 @@ function CodeEditor({ initialRoomId, onBack }: {
       </div>
 
       {/* Right Sidebar - Collaborators */}
-      <div className="w-64 bg-white border-l border-gray-200 flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-gray-200 bg-gray-50">
-          <h3 className="font-semibold text-gray-900">Collaborators</h3>
+      <div className="w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-colors">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 transition-colors">
+          <h3 className="font-semibold text-gray-900 dark:text-white transition-colors flex items-center">
+            <FiUsers className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
+            Collaborators
+          </h3>
         </div>
         <div className="flex-1 overflow-auto p-4">
           {presence && presence.length > 0 ? (
@@ -1021,21 +1059,21 @@ function CodeEditor({ initialRoomId, onBack }: {
               {presence.map((user) => (
                 <div 
                   key={user._id} 
-                  className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-200"
+                  className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 transition-colors"
                 >
                   <div className="relative">
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                      <span className="text-sm font-medium text-indigo-700">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center transition-colors">
+                      <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300 transition-colors">
                         {user.name.charAt(0).toUpperCase()}
                   </span>
                     </div>
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-white" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 dark:bg-green-500 border-2 border-white dark:border-gray-800 transition-colors" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate transition-colors">
                       {user.name}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
                       Line {user.cursor.line}
                     </p>
                   </div>
@@ -1044,11 +1082,9 @@ function CodeEditor({ initialRoomId, onBack }: {
             </div>
           ) : (
             <div className="text-center py-8">
-              <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            <p className="text-sm text-gray-500">No active collaborators</p>
-              <p className="text-xs text-gray-400 mt-1">
+              <FiUsers className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600 transition-colors" />
+              <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors">No active collaborators</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 transition-colors">
                 Share the room code to invite others
               </p>
             </div>
