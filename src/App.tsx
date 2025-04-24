@@ -597,11 +597,11 @@ function CodeEditor({ initialRoomId, onBack }: {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col relative">
         {selectedRoomId && room ? (
           <>
             {/* Header */}
-            <div className="border-b border-gray-200">
+            <div className="flex-none border-b border-gray-200">
               {/* Top bar with file info and actions */}
               <div className="flex items-center justify-between px-4 py-2 bg-gray-50">
                 <div className="flex items-center space-x-4">
@@ -740,42 +740,46 @@ function CodeEditor({ initialRoomId, onBack }: {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative overflow-hidden">
               {activeTab === 'editor' && (
-                <Editor
-                  height="100%"
-                  language={room.language}
-                  value={localCode}
-                  onChange={handleEditorChange}
-                  onMount={(editor) => {
-                    editor.onDidChangeCursorPosition(() => handleCursorChange(editor));
-                  }}
-                  options={{
-                    fontFamily: "'Fira Code', monospace",
-                    bracketPairColorization: { enabled: true },
-                    ...editorOptions
-                  }}
-                />
+                <div className="absolute inset-0 pb-6">
+                  <Editor
+                    height="100%"
+                    language={room.language}
+                    value={localCode}
+                    onChange={handleEditorChange}
+                    onMount={(editor) => {
+                      editor.onDidChangeCursorPosition(() => handleCursorChange(editor));
+                    }}
+                    options={{
+                      fontFamily: "'Fira Code', monospace",
+                      bracketPairColorization: { enabled: true },
+                      ...editorOptions
+                    }}
+                  />
+                </div>
               )}
 
               {activeTab === 'output' && (
-                <div className="h-full flex flex-col">
-                  <div className="flex-1 overflow-auto p-4 font-mono bg-gray-900 text-gray-100">
-                {output || "Run your code to see the output here..."}
-                  </div>
-                  {executionTimestamp && (
-                    <div className="p-2 bg-gray-800 text-gray-400 text-xs border-t border-gray-700">
-                      <span>Executed at: {executionTimestamp.toLocaleTimeString()}</span>
-                      {executionTime && (
-                        <span className="ml-4">Duration: {executionTime}ms</span>
-                      )}
+                <div className="absolute inset-0 pb-6">
+                  <div className="h-full flex flex-col">
+                    <div className="flex-1 overflow-auto p-4 font-mono bg-gray-900 text-gray-100">
+                      {output || "Run your code to see the output here..."}
                     </div>
-                  )}
+                    {executionTimestamp && (
+                      <div className="p-2 bg-gray-800 text-gray-400 text-xs border-t border-gray-700">
+                        <span>Executed at: {executionTimestamp.toLocaleTimeString()}</span>
+                        {executionTime && (
+                          <span className="ml-4">Duration: {executionTime}ms</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
               {activeTab === 'review' && (
-                <div className="h-full overflow-hidden">
+                <div className="absolute inset-0 pb-6">
                   <AIReviewPanel review={review} />
                 </div>
               )}
@@ -790,7 +794,7 @@ function CodeEditor({ initialRoomId, onBack }: {
               )}
 
               {/* Footer */}
-              <div className="absolute bottom-0 left-0 right-64 flex items-center justify-between px-4 h-6 bg-gray-50 text-gray-600 text-xs border-t border-gray-200">
+              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-4 h-6 bg-gray-50 text-gray-600 text-xs border-t border-gray-200 z-10">
                 <div className="flex items-center space-x-4">
                   <div>Ln {cursorPosition.line}, Col {cursorPosition.column}</div>
                   <div>{wordCount} words</div>
