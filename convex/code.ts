@@ -189,28 +189,18 @@ IMPORTANT:
           const cleanContent = output.content
             .replace(/```json\s*/g, '')
             .replace(/```\s*/g, '')
-            // First unescape any escaped quotes within code snippets
-            .replace(/\\"/g, '"')
-            // Handle escaped backslashes in code snippets
-            .replace(/\\\\/g, '\\')
-            // Remove any trailing backslashes that might break JSON
-            .replace(/\\+\s*([,}])/g, '$1')
-            // Remove any remaining escaped characters that might break JSON
-            .replace(/\\[^"]|\\$/g, '')
-            // Remove trailing '>' characters
+            // Remove trailing '>' characters and trim
             .replace(/>\s*$/g, '')
             .trim();
             
           console.log("Cleaned content:", cleanContent);
           
-          // First, try to parse the content as JSON
-          const review = JSON.parse(cleanContent);
+          // Parse the JSON first to get the structure
+          const parsedContent = JSON.parse(cleanContent);
           
           // Helper function to clean code snippets
           const cleanCodeSnippet = (code: string) => {
             return String(code || '')
-              .replace(/\\+$/g, '') // Remove trailing backslashes
-              .replace(/\\[^"]|\\$/g, '') // Remove any remaining escaped chars except quotes
               .replace(/\s+/g, ' ') // Normalize whitespace
               .trim()
               .slice(0, 100);
@@ -218,20 +208,20 @@ IMPORTANT:
           
           // Validate and normalize the structure
           const validatedReview = {
-            suggestions: (review.suggestions || []).slice(0, 2).map((s: any) => ({
+            suggestions: (parsedContent.suggestions || []).slice(0, 2).map((s: any) => ({
               title: String(s.title || '').slice(0, 50),
               description: String(s.description || '').slice(0, 150),
               code: cleanCodeSnippet(s.code),
               lineNumber: Number(s.lineNumber) || 1
             })),
-            issues: (review.issues || []).slice(0, 2).map((i: any) => ({
+            issues: (parsedContent.issues || []).slice(0, 2).map((i: any) => ({
               title: String(i.title || '').slice(0, 50),
               description: String(i.description || '').slice(0, 150),
               severity: ['high', 'medium', 'low'].includes(i.severity) ? i.severity : 'medium',
               code: cleanCodeSnippet(i.code),
               lineNumber: Number(i.lineNumber) || 1
             })),
-            improvements: (review.improvements || []).slice(0, 2).map((i: any) => ({
+            improvements: (parsedContent.improvements || []).slice(0, 2).map((i: any) => ({
               title: String(i.title || '').slice(0, 50),
               description: String(i.description || '').slice(0, 150),
               code: cleanCodeSnippet(i.code),
