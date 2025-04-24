@@ -1,7 +1,8 @@
-import React, { useRef } from "react";
-import { FiUpload } from "react-icons/fi";
+import React, { useRef, useState } from "react";
+import { FiUpload, FiCode } from "react-icons/fi";
 import { toast } from "sonner";
 import { detectLanguageFromFileName } from "./utils/fileUtils";
+import ConfirmModal from "./ConfirmModal";
 
 interface FileUploadButtonProps {
   onFileContent: (content: string) => void;
@@ -15,6 +16,8 @@ const FileUploadButton: React.FC<FileUploadButtonProps> = ({
   className = "",
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [detectedLanguage, setDetectedLanguage] = useState("");
 
   const handleClick = () => {
     if (fileInputRef.current) {
@@ -52,15 +55,8 @@ const FileUploadButton: React.FC<FileUploadButtonProps> = ({
       // Detect language from file extension
       const language = detectLanguageFromFileName(file.name);
       if (language && onLanguageDetected) {
-        // Ask for confirmation before changing the language
-        const shouldChangeLanguage = window.confirm(
-          `Do you want to change the programming language to ${language} based on the file extension?`
-        );
-        
-        if (shouldChangeLanguage) {
-          onLanguageDetected(language);
-          toast.success(`Changed language to ${language}`);
-        }
+        setDetectedLanguage(language);
+        setIsConfirmModalOpen(true);
       }
     } catch (error) {
       toast.error("Failed to read file. Please try again.");
@@ -84,6 +80,18 @@ const FileUploadButton: React.FC<FileUploadButtonProps> = ({
     });
   };
 
+  const handleConfirmLanguageChange = () => {
+    if (onLanguageDetected) {
+      onLanguageDetected(detectedLanguage);
+      toast.success(`Changed language to ${detectedLanguage}`);
+    }
+    setIsConfirmModalOpen(false);
+  };
+
+  const handleCancelLanguageChange = () => {
+    setIsConfirmModalOpen(false);
+  };
+
   return (
     <>
       <input
@@ -101,6 +109,31 @@ const FileUploadButton: React.FC<FileUploadButtonProps> = ({
         <FiUpload className="w-4 h-4" />
         <span>Upload</span>
       </button>
+      {/* Language change confirmation modal */}
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        title="Change Programming Language"
+        message={
+          detectedLanguage ? 
+          <>
+            <div className="flex items-center mb-4">
+              <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mr-3">
+                <FiCode className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div>
+                <p>The uploaded file appears to be:</p>
+                <p className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">{detectedLanguage}</p>
+              </div>
+            </div>
+            <p>Would you like to update the editor language settings accordingly?</p>
+          </> : 
+          'Would you like to change the programming language?'
+        }
+        confirmText="Yes, Change Language"
+        cancelText="No, Keep Current Language"
+        onConfirm={handleConfirmLanguageChange}
+        onCancel={handleCancelLanguageChange}
+      />
     </>
   );
 };
