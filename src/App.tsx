@@ -872,7 +872,20 @@ function CodeEditor({ initialRoomId, onBack }: {
                 </div>
                 
                 <div className="flex items-center space-x-4">
-                  <div>{new Date().toLocaleTimeString()}</div>
+                  {activeTab === 'review' && review ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-400">AI:</span>
+                      <span>{review._metadata?.model || 'Qwen2.5-Coder'}</span>
+                      {review._metadata?.created && (
+                        <>
+                          <span className="text-gray-400 ml-2">•</span>
+                          <span>{new Date(review._metadata.created * 1000).toLocaleTimeString()}</span>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div>{new Date().toLocaleTimeString()}</div>
+                  )}
                 </div>
               </div>
             </div>

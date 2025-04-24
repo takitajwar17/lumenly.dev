@@ -226,7 +226,11 @@ IMPORTANT:
               description: String(i.description || '').slice(0, 150),
               code: cleanCodeSnippet(i.code),
               lineNumber: Number(i.lineNumber) || 1
-            }))
+            })),
+            _metadata: {
+              model: completion.model,
+              created: completion.created
+            }
           };
           
           // Return the stringified, validated JSON

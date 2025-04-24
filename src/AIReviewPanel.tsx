@@ -28,6 +28,10 @@ export interface AIReview {
   suggestions: ReviewItem[];
   issues: ReviewItem[];
   improvements: ReviewItem[];
+  _metadata?: {
+    model: string;
+    created: number;
+  };
 }
 
 interface AIReviewPanelProps {
