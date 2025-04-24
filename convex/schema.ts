@@ -35,6 +35,7 @@ const applicationTables = {
     })),
     color: v.optional(v.string()),
     lastSeenTime: v.number(),
+    lastPing: v.optional(v.number()),
     isActive: v.optional(v.boolean()),
     isTyping: v.optional(v.boolean()),
     lastActivity: v.optional(v.number()),

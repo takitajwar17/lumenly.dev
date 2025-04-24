@@ -280,6 +280,7 @@ export const updatePresence = mutation({
         cursor: args.cursor,
         selection: args.selection,
         lastSeenTime: now,
+        lastPing: now,
         isActive: args.isActive ?? existing.isActive ?? false,
         isTyping: args.isTyping ?? existing.isTyping ?? false,
         lastActivity: args.isActive ? now : existing.lastActivity,
@@ -299,6 +300,7 @@ export const updatePresence = mutation({
         selection: args.selection,
         color,
         lastSeenTime: now,
+        lastPing: now,
         isActive: args.isActive ?? false,
         isTyping: args.isTyping ?? false,
         lastActivity: args.isActive ? now : undefined,
@@ -315,11 +317,12 @@ export const getPresence = query({
     // Get current user's ID to highlight it differently in the UI
     const currentUserId = await getAuthUserId(ctx);
     
-    // Filter for users seen in the last 2 minutes (120000ms)
+    // Filter for users seen in the last 15 seconds
+    // Using lastSeenTime which exists on all records
     const presence = await ctx.db
       .query("presence")
       .withIndex("by_room", (q) => q.eq("roomId", args.roomId))
-      .filter((q) => q.gt(q.field("lastSeenTime"), Date.now() - 120000))
+      .filter((q) => q.gt(q.field("lastSeenTime"), Date.now() - 15000))
       .collect();
       
     // Add a field to indicate if this is the current user
@@ -347,6 +350,30 @@ export const updateLanguage = mutation({
     await ctx.db.patch(args.roomId, {
       language: args.language,
     });
+
+    return { success: true };
+  },
+});
+
+export const leaveRoom = mutation({
+  args: {
+    roomId: v.id("rooms"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Find user's presence in the room
+    const presence = await ctx.db
+      .query("presence")
+      .withIndex("by_room", (q) => q.eq("roomId", args.roomId))
+      .filter((q) => q.eq(q.field("userId"), userId))
+      .unique();
+
+    // If presence record exists, delete it
+    if (presence) {
+      await ctx.db.delete(presence._id);
+    }
 
     return { success: true };
   },

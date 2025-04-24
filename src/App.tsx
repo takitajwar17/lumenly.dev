@@ -97,6 +97,7 @@ function RoomRouteHandler() {
   const [isLoading, setIsLoading] = useState(true);
   
   const joinRoomByCode = useMutation(api.rooms.joinByCode);
+  const leaveRoom = useMutation(api.rooms.leaveRoom);
   
   // Load room by code
   useEffect(() => {
@@ -123,8 +124,15 @@ function RoomRouteHandler() {
   
   // Handle navigation back to /room
   const handleBack = useCallback(() => {
-    void navigate('/room');
-  }, [navigate]);
+    // If we have a room ID, make sure to leave it first
+    if (roomId) {
+      void leaveRoom({ roomId }).then(() => {
+        void navigate('/room');
+      });
+    } else {
+      void navigate('/room');
+    }
+  }, [navigate, roomId, leaveRoom]);
   
   if (isLoading) {
     return (
@@ -236,6 +244,8 @@ function CodeRoom() {
   
   const handleSelectRoom = useCallback((roomCode: string) => {
     if (roomCode) {
+      // Note: We don't need to call leaveRoom here because we're not in a room yet,
+      // we're just moving to another one. The RoomRouteHandler will handle any cleanup.
       void navigate(`/room/${roomCode}`);
     }
   }, [navigate]);
@@ -470,6 +480,7 @@ function CodeEditor({ initialRoomId, onBack }: {
   const updateCode = useMutation(api.rooms.updateCode);
   const updateLanguage = useMutation(api.rooms.updateLanguage);
   const updatePresence = useMutation(api.rooms.updatePresence);
+  const leaveRoom = useMutation(api.rooms.leaveRoom);
   const executeCode = useAction(api.code.executeCode);
   const getAIAssistance = useAction(api.code.getAIAssistance);
   
@@ -540,6 +551,39 @@ function CodeEditor({ initialRoomId, onBack }: {
       setLastSaved(new Date()); // Set initial save time
     }
   }, [room]);
+  
+  // Handle room leaving - this is crucial for cleaning up presence
+  useEffect(() => {
+    if (!selectedRoomId) return;
+
+    // Function to handle room leaving
+    const handleLeaveRoom = () => {
+      if (selectedRoomId) {
+        void leaveRoom({ roomId: selectedRoomId });
+      }
+    };
+
+    // Set up event listener for page unload (browser close, refresh, navigate away)
+    window.addEventListener('beforeunload', handleLeaveRoom);
+
+    // Clean up function
+    return () => {
+      window.removeEventListener('beforeunload', handleLeaveRoom);
+      // Also call handleLeaveRoom when the component unmounts
+      handleLeaveRoom();
+    };
+  }, [selectedRoomId, leaveRoom]);
+  
+  // Handle back button click with proper cleanup
+  const handleBackWithCleanup = useCallback(() => {
+    if (selectedRoomId) {
+      void leaveRoom({ roomId: selectedRoomId }).then(() => {
+        onBack(); // Only navigate back after cleanup
+      });
+    } else {
+      onBack();
+    }
+  }, [selectedRoomId, leaveRoom, onBack]);
   
   // Redirect if room not found
   useEffect(() => {
@@ -621,9 +665,28 @@ function CodeEditor({ initialRoomId, onBack }: {
       }
     }, 5000); // Update every 5 seconds
     
+    // Add a more frequent heartbeat ping (every 3 seconds)
+    // This is just to update the lastPing field without changing any other state
+    const heartbeatId = setInterval(() => {
+      if (editorRef.current) {
+        const position = editorRef.current.getPosition();
+        if (position && selectedRoomId) {
+          void updatePresence({
+            roomId: selectedRoomId,
+            cursor: {
+              line: position.lineNumber,
+              column: position.column,
+            },
+            isActive: true
+          });
+        }
+      }
+    }, 3000);
+    
     // Clean up the interval and any active typing timeout when unmounting
     return () => {
       clearInterval(intervalId);
+      clearInterval(heartbeatId);
       if (typingTimeoutId) {
         clearTimeout(typingTimeoutId);
       }
@@ -718,14 +781,14 @@ function CodeEditor({ initialRoomId, onBack }: {
          e.selection.startColumn !== e.selection.endColumn);
       
       // When selection changes, update presence
-      const position = editor.getPosition();
+    const position = editor.getPosition();
       if (position) {
         // For selection changes, don't change the typing status
         // That should only be set by actual typing events
         void updatePresence({
           roomId: selectedRoomId,
           cursor: {
-            line: position.lineNumber,
+      line: position.lineNumber,
             column: position.column,
           },
           selection: isTextSelected ? {
@@ -778,7 +841,7 @@ function CodeEditor({ initialRoomId, onBack }: {
       cursorPositionDisposable.dispose();
     };
   }, [selectedRoomId, updatePresence]);
-  
+
   // Update word count on initial load
   useEffect(() => {
     if (localCode) {
@@ -839,6 +902,8 @@ function CodeEditor({ initialRoomId, onBack }: {
   
   const handleSelectRoom = useCallback((roomCode: string) => {
     if (roomCode) {
+      // Note: We don't need to call leaveRoom here because we're not in a room yet,
+      // we're just moving to another one. The RoomRouteHandler will handle any cleanup.
       void navigate(`/room/${roomCode}`);
     }
   }, [navigate]);
@@ -1012,7 +1077,7 @@ function CodeEditor({ initialRoomId, onBack }: {
       <div className="w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-colors">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 transition-colors">
           <button
-            onClick={onBack}
+            onClick={handleBackWithCleanup}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
           >
             <FiChevronLeft className="w-4 h-4" />
@@ -1273,10 +1338,10 @@ function CodeEditor({ initialRoomId, onBack }: {
                       // Set initial cursor position
                       const position = editor.getPosition();
                       if (position) {
-                        setCursorPosition({
-                          line: position.lineNumber,
-                          column: position.column
-                        });
+                      setCursorPosition({
+                        line: position.lineNumber,
+                        column: position.column
+                      });
                       }
                       
                       // Initial decoration update if presence exists
@@ -1520,8 +1585,8 @@ function CodeEditor({ initialRoomId, onBack }: {
                           {user.isAnonymous && user.nickname
                             ? user.nickname.substring(0, 2)
                             : user.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
+                  </span>
+                </div>
                       <div 
                         className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 transition-colors ${
                           activityStatus === 'typing' || activityStatus === 'editing' || activityStatus === 'active'

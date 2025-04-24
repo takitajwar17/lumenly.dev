@@ -15,8 +15,11 @@ import type {
 } from "convex/server";
 import type * as auth from "../auth.js";
 import type * as code from "../code.js";
+import type * as crons from "../crons.js";
 import type * as http from "../http.js";
+import type * as presence from "../presence.js";
 import type * as rooms from "../rooms.js";
+import type * as scheduled from "../scheduled.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -29,8 +32,11 @@ import type * as rooms from "../rooms.js";
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   code: typeof code;
+  crons: typeof crons;
   http: typeof http;
+  presence: typeof presence;
   rooms: typeof rooms;
+  scheduled: typeof scheduled;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
