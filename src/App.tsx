@@ -788,19 +788,19 @@ function CodeEditor({ initialRoomId, onBack }: {
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-between px-4 h-6 bg-gray-50 text-gray-600 text-xs border-t border-gray-200">
-              <div className="flex items-center space-x-4">
-                <div>Ln {cursorPosition.line}, Col {cursorPosition.column}</div>
-                <div>{wordCount} words</div>
-                <div>{room.language}</div>
-              </div>
-              <div className="flex items-center space-x-4">
-                {lastSaved && (
-                  <div>Last saved: {lastSaved.toLocaleTimeString()}</div>
-                )}
+              {/* Footer */}
+              <div className="absolute bottom-0 left-0 right-64 flex items-center justify-between px-4 h-6 bg-gray-50 text-gray-600 text-xs border-t border-gray-200">
+                <div className="flex items-center space-x-4">
+                  <div>Ln {cursorPosition.line}, Col {cursorPosition.column}</div>
+                  <div>{wordCount} words</div>
+                  <div>{room.language}</div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  {lastSaved && (
+                    <div>Last saved: {lastSaved.toLocaleTimeString()}</div>
+                  )}
+                </div>
               </div>
             </div>
           </>
