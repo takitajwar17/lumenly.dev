@@ -257,3 +257,25 @@ export const getPresence = query({
       .collect();
   },
 });
+
+export const updateLanguage = mutation({
+  args: {
+    roomId: v.id("rooms"),
+    language: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Verify the room exists and user has access
+    const room = await ctx.db.get(args.roomId);
+    if (!room) throw new Error("Room not found");
+
+    // Update the language field
+    await ctx.db.patch(args.roomId, {
+      language: args.language,
+    });
+
+    return { success: true };
+  },
+});

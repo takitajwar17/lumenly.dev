@@ -11,6 +11,7 @@ import AIReviewPanel from "./AIReviewPanel";
 import { AIReview } from "./AIReviewPanel";
 import { ThemeProvider, useTheme } from "./ThemeContext";
 import { FiMoon, FiSun, FiChevronLeft, FiPlay, FiCode, FiCpu, FiUsers, FiClipboard, FiTrash2, FiCopy } from "react-icons/fi";
+import FileUploadButton from "./FileUploadButton";
 
 // Debounce utility function
 function debounce<T extends (...args: any[]) => any>(
@@ -58,7 +59,7 @@ function AppContent() {
                 </>
               )}
             </button>
-            <SignOutButton />
+          <SignOutButton />
           </div>
         </header>
         <main className="flex-1 flex overflow-hidden w-full">
@@ -451,6 +452,7 @@ function CodeEditor({ initialRoomId, onBack }: {
   const [wordCount, setWordCount] = useState(0);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isUpdatingLanguage, setIsUpdatingLanguage] = useState(false);
   
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -464,6 +466,7 @@ function CodeEditor({ initialRoomId, onBack }: {
   );
   
   const updateCode = useMutation(api.rooms.updateCode);
+  const updateLanguage = useMutation(api.rooms.updateLanguage);
   const updatePresence = useMutation(api.rooms.updatePresence);
   const executeCode = useAction(api.code.executeCode);
   const getAIAssistance = useAction(api.code.getAIAssistance);
@@ -611,6 +614,33 @@ function CodeEditor({ initialRoomId, onBack }: {
     }
   }, [debouncedUpdateCode]);
 
+  const handleUploadCode = useCallback((content: string) => {
+    setLocalCode(content);
+    setCode(content);
+    debouncedUpdateCode(content);
+    toast.success("File uploaded successfully");
+  }, [debouncedUpdateCode]);
+
+  const handleLanguageChange = useCallback(async (language: string) => {
+    if (!selectedRoomId || !room || room.language === language) return;
+    
+    setIsUpdatingLanguage(true);
+    try {
+      await updateLanguage({ roomId: selectedRoomId, language });
+      toast.success(`Language updated to ${language}`);
+    } catch (error) {
+      toast.error("Failed to update language");
+      console.error("Language update error:", error);
+    } finally {
+      setIsUpdatingLanguage(false);
+    }
+  }, [selectedRoomId, room, updateLanguage]);
+
+  // Wrapper function that doesn't return a promise (for FileUploadButton)
+  const handleDetectedLanguage = useCallback((language: string) => {
+    void handleLanguageChange(language);
+  }, [handleLanguageChange]);
+
   if (isLoading && !room) {
     return (
       <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-900 transition-colors">
@@ -647,8 +677,8 @@ function CodeEditor({ initialRoomId, onBack }: {
               <p className="text-sm font-medium text-indigo-700 dark:text-indigo-400 mb-1.5 transition-colors">Room Code</p>
               <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 px-3 py-2 transition-colors">
                 <p className="text-xl tracking-wider font-mono font-semibold text-indigo-600 dark:text-indigo-400 transition-colors">
-                  {room.code}
-                </p>
+              {room.code}
+            </p>
               </div>
               <p className="text-xs text-indigo-600/70 dark:text-indigo-400/70 mt-2 transition-colors">Share this code with collaborators</p>
             </div>
@@ -658,13 +688,13 @@ function CodeEditor({ initialRoomId, onBack }: {
         <div className="flex-1 overflow-auto">
           <div className="p-4">
             <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 transition-colors">Your Past Rooms</h3>
-            <div className="space-y-2">
-              {rooms?.map((room) => (
-                <button
-                  key={room._id}
-                  onClick={() => void handleSelectRoom(room.code)}
+          <div className="space-y-2">
+            {rooms?.map((room) => (
+              <button
+                key={room._id}
+                onClick={() => void handleSelectRoom(room.code)}
                   className={`w-full text-left p-3 rounded-lg transition-all ${
-                    selectedRoomId === room._id
+                  selectedRoomId === room._id
                       ? "bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-200 dark:border-indigo-700"
                       : "hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-gray-200 dark:border-gray-700"
                   }`}
@@ -679,8 +709,8 @@ function CodeEditor({ initialRoomId, onBack }: {
                   } transition-colors`}>
                     {room.language}
                   </span>
-                </button>
-              ))}
+              </button>
+            ))}
             </div>
           </div>
         </div>
@@ -698,13 +728,23 @@ function CodeEditor({ initialRoomId, onBack }: {
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white transition-colors">{room.name}</h2>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-500 dark:text-gray-400 transition-colors">Language:</span>
-                    <span className="text-sm font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-700 dark:text-gray-300 transition-colors">
-                      {room.language}
-                    </span>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-700 dark:text-gray-300 transition-colors">
+                        {room.language}
+                      </span>
+                      {isUpdatingLanguage && (
+                        <div className="ml-2 w-4 h-4 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin"></div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
+                  <FileUploadButton 
+                    onFileContent={handleUploadCode} 
+                    onLanguageDetected={handleDetectedLanguage}
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  />
                   <button
                     onClick={handleCopyCode}
                     className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -966,7 +1006,7 @@ function CodeEditor({ initialRoomId, onBack }: {
                       <div className="px-4 text-gray-600 dark:text-gray-400 transition-colors">
                         Executed: {executionTimestamp.toLocaleTimeString()}
                       </div>
-                      {executionTime && (
+                          {executionTime && (
                         <div className="pl-4 text-gray-600 dark:text-gray-400 transition-colors">
                           Duration: {executionTime}ms
                         </div>
@@ -1012,7 +1052,7 @@ function CodeEditor({ initialRoomId, onBack }: {
                 <div className="flex items-center space-x-4 text-gray-500 dark:text-gray-400 transition-colors">
                   {activeTab === 'review' && review?._metadata ? (
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                         <FiCpu className="w-3.5 h-3.5" />
                         <span>{review._metadata.model}</span>
                       </div>
@@ -1020,7 +1060,7 @@ function CodeEditor({ initialRoomId, onBack }: {
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span>{new Date(review._metadata.created * 1000).toLocaleTimeString()}</span>
+                          <span>{new Date(review._metadata.created * 1000).toLocaleTimeString()}</span>
                       </div>
                     </div>
                   ) : (
