@@ -477,14 +477,29 @@ function CodeEditor({ initialRoomId, onBack }: {
     if (!value) return;
     setLocalCode(value); // Update local state immediately
     setCode(value);
+    // Calculate word count
+    const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
+    setWordCount(wordCount);
     debouncedUpdateCode(value); // Debounced server update
   }, [debouncedUpdateCode]);
 
   const handleCursorChange = useCallback((editor: any) => {
     if (!selectedRoomId) return;
     const position = editor.getPosition();
+    setCursorPosition({
+      line: position.lineNumber,
+      column: position.column
+    });
     debouncedUpdatePresence(position);
   }, [selectedRoomId, debouncedUpdatePresence]);
+
+  // Update word count on initial load
+  useEffect(() => {
+    if (localCode) {
+      const wordCount = localCode.trim() ? localCode.trim().split(/\s+/).length : 0;
+      setWordCount(wordCount);
+    }
+  }, [localCode]);
 
   // Enhanced editor options
   const editorOptions = useMemo(() => ({
@@ -750,6 +765,12 @@ function CodeEditor({ initialRoomId, onBack }: {
                     onChange={handleEditorChange}
                     onMount={(editor) => {
                       editor.onDidChangeCursorPosition(() => handleCursorChange(editor));
+                      // Set initial cursor position
+                      const position = editor.getPosition();
+                      setCursorPosition({
+                        line: position.lineNumber,
+                        column: position.column
+                      });
                     }}
                     options={{
                       fontFamily: "'Fira Code', monospace",
@@ -796,14 +817,62 @@ function CodeEditor({ initialRoomId, onBack }: {
               {/* Footer */}
               <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-4 h-6 bg-gray-50 text-gray-600 text-xs border-t border-gray-200 z-10">
                 <div className="flex items-center space-x-4">
-                  <div>Ln {cursorPosition.line}, Col {cursorPosition.column}</div>
-                  <div>{wordCount} words</div>
-                  <div>{room.language}</div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  {lastSaved && (
-                    <div>Last saved: {lastSaved.toLocaleTimeString()}</div>
+                  {activeTab === 'editor' && (
+                    <>
+                      <div>Ln {cursorPosition.line}, Col {cursorPosition.column}</div>
+                      <div>{wordCount} words</div>
+                      <div>{room.language}</div>
+                      {lastSaved && (
+                        <div>Last saved: {lastSaved.toLocaleTimeString()}</div>
+                      )}
+                    </>
                   )}
+                  
+                  {activeTab === 'output' && (
+                    <>
+                      <div>{room.language}</div>
+                      {executionTimestamp && (
+                        <>
+                          <div>Executed: {executionTimestamp.toLocaleTimeString()}</div>
+                          {executionTime && (
+                            <div>Duration: {executionTime}ms</div>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
+                  
+                  {activeTab === 'review' && review && (
+                    <>
+                      <div>
+                        Issues: {review.issues.length}
+                      </div>
+                      <div>
+                        Suggestions: {review.suggestions.length}
+                      </div>
+                      <div>
+                        Improvements: {review.improvements.length}
+                      </div>
+                      {review.issues.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          <span>Severity:</span>
+                          {review.issues.some(i => i.severity === 'high') && (
+                            <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded">High</span>
+                          )}
+                          {review.issues.some(i => i.severity === 'medium') && (
+                            <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded">Medium</span>
+                          )}
+                          {review.issues.some(i => i.severity === 'low') && (
+                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">Low</span>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+                
+                <div className="flex items-center space-x-4">
+                  <div>{new Date().toLocaleTimeString()}</div>
                 </div>
               </div>
             </div>
