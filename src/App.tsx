@@ -568,45 +568,62 @@ function CodeEditor({ initialRoomId, onBack }: {
   }
 
   return (
-    <div className="w-full h-full flex overflow-hidden">
+    <div className="w-full h-full flex overflow-hidden bg-gray-50">
       {/* Left Sidebar - Room List */}
-      <div className="w-64 border-r flex flex-col overflow-hidden">
-        <div className="p-4 border-b">
+      <div className="w-72 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-gray-200 bg-gray-50">
           <button
             onClick={onBack}
-            className="w-full border border-gray-300 text-gray-700 rounded px-4 py-2 hover:bg-gray-50"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-gray-700 bg-white rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
           >
-            Back to Main Menu
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span className="font-medium">Back to Main Menu</span>
           </button>
         </div>
         
         {room && (
-          <div className="p-4 bg-indigo-50 border-b border-indigo-100">
-            <p className="font-semibold mb-1">Room Code:</p>
-            <p className="text-xl tracking-wide font-mono text-center bg-white p-1 rounded border">
-              {room.code}
-            </p>
-            <p className="text-xs text-center mt-1 text-gray-500">Share this code with collaborators</p>
+          <div className="p-4 bg-indigo-50/50 border-b border-indigo-100">
+            <div className="text-center">
+              <p className="text-sm font-medium text-indigo-700 mb-1.5">Room Code</p>
+              <div className="bg-white rounded-lg border-2 border-indigo-200 px-3 py-2">
+                <p className="text-xl tracking-wider font-mono font-semibold text-indigo-600">
+                  {room.code}
+                </p>
+              </div>
+              <p className="text-xs text-indigo-600/70 mt-2">Share this code with collaborators</p>
+            </div>
           </div>
         )}
         
-        <div className="flex-1 overflow-auto p-4">
-          <p className="font-semibold mb-2 text-sm text-gray-500">Your Past Rooms:</p>
-          <div className="space-y-2">
-            {rooms?.map((room) => (
-              <button
-                key={room._id}
-                onClick={() => void handleSelectRoom(room.code)}
-                className={`w-full text-left p-2 rounded ${
-                  selectedRoomId === room._id
-                    ? "bg-indigo-100"
-                    : "hover:bg-gray-100"
-                }`}
-              >
-                <span className="block font-medium truncate">{room.name}</span>
-                <span className="block text-xs text-gray-500">{room.language}</span>
-              </button>
-            ))}
+        <div className="flex-1 overflow-auto">
+          <div className="p-4">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Your Past Rooms</h3>
+            <div className="space-y-2">
+              {rooms?.map((room) => (
+                <button
+                  key={room._id}
+                  onClick={() => void handleSelectRoom(room.code)}
+                  className={`w-full text-left p-3 rounded-lg transition-colors ${
+                    selectedRoomId === room._id
+                      ? "bg-indigo-50 border-2 border-indigo-200"
+                      : "hover:bg-gray-50 border border-gray-200"
+                  }`}
+                >
+                  <span className={`block font-medium truncate ${
+                    selectedRoomId === room._id ? "text-indigo-700" : "text-gray-700"
+                  }`}>
+                    {room.name}
+                  </span>
+                  <span className={`block text-xs mt-0.5 ${
+                    selectedRoomId === room._id ? "text-indigo-500" : "text-gray-500"
+                  }`}>
+                    {room.language}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -618,12 +635,14 @@ function CodeEditor({ initialRoomId, onBack }: {
             {/* Header */}
             <div className="flex-none border-b border-gray-200">
               {/* Top bar with file info and actions */}
-              <div className="flex items-center justify-between px-4 py-2 bg-gray-50">
-                <div className="flex items-center space-x-4">
-                  <h2 className="font-medium">{room.name}</h2>
+              <div className="flex items-center justify-between px-6 py-3 bg-white">
+                <div className="flex items-center space-x-6">
+                  <h2 className="text-lg font-semibold text-gray-900">{room.name}</h2>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-500">Language:</span>
-                    <span className="text-sm font-medium">{room.language}</span>
+                    <span className="text-sm font-medium px-2 py-1 bg-gray-100 rounded-md text-gray-700">
+                      {room.language}
+                    </span>
                   </div>
                 </div>
                 
@@ -633,7 +652,7 @@ function CodeEditor({ initialRoomId, onBack }: {
                       void navigator.clipboard.writeText(code);
                       toast.success("Code copied to clipboard");
                     }}
-                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
+                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                     title="Copy code"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -642,7 +661,7 @@ function CodeEditor({ initialRoomId, onBack }: {
                   </button>
                   <button
                     onClick={() => setLocalCode("")}
-                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
+                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                     title="Clear code"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -653,28 +672,28 @@ function CodeEditor({ initialRoomId, onBack }: {
               </div>
 
               {/* Action toolbar */}
-              <div className="flex items-center justify-between px-4 py-2 bg-gray-100/50">
-                <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between px-6 py-2 bg-gray-50/80 border-t border-gray-100">
+                <div className="flex items-center space-x-3">
                   <button
                     onClick={() => void handleRunCode()}
                     disabled={isRunningCode}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${
                       isRunningCode
-                        ? 'bg-blue-100 text-blue-400 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                        ? 'bg-blue-50 text-blue-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
                     }`}
                   >
                     {isRunningCode ? (
                       <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin -ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span>Running...</span>
+                        <span>Running Code...</span>
                       </>
                     ) : (
                       <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -686,23 +705,23 @@ function CodeEditor({ initialRoomId, onBack }: {
                   <button
                     onClick={() => void handleAIAssist()}
                     disabled={isGettingReview}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${
                       isGettingReview
-                        ? 'bg-purple-100 text-purple-400 cursor-not-allowed'
-                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                        ? 'bg-purple-50 text-purple-400 cursor-not-allowed'
+                        : 'bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800'
                     }`}
                   >
                     {isGettingReview ? (
                       <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin -ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span>Analyzing...</span>
+                        <span>Analyzing Code...</span>
                       </>
                     ) : (
                       <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                         <span>AI Review</span>
@@ -711,43 +730,52 @@ function CodeEditor({ initialRoomId, onBack }: {
                   </button>
                 </div>
 
-                <div className="flex items-center rounded-lg bg-white/80 p-1">
+                <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-200">
                   <button
                     onClick={() => setActiveTab('editor')}
-                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm transition-colors ${
                       activeTab === 'editor'
-                        ? 'bg-gray-200 text-gray-900'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-indigo-50 text-indigo-700 font-medium'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                   >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
                     <span>Editor</span>
                   </button>
 
                   <button
                     onClick={() => setActiveTab('output')}
-                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm transition-colors ${
                       activeTab === 'output'
-                        ? 'bg-gray-200 text-gray-900'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-indigo-50 text-indigo-700 font-medium'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                   >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
                     <span>Output</span>
                     {output && activeTab !== 'output' && (
-                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                     )}
                   </button>
 
                   <button
                     onClick={() => setActiveTab('review')}
-                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm transition-colors ${
                       activeTab === 'review'
-                        ? 'bg-gray-200 text-gray-900'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-indigo-50 text-indigo-700 font-medium'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                   >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
                     <span>Review</span>
                     {review && activeTab !== 'review' && (
-                      <span className="w-2 h-2 rounded-full bg-purple-500" />
+                      <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
                     )}
                   </button>
                 </div>
@@ -757,42 +785,100 @@ function CodeEditor({ initialRoomId, onBack }: {
             {/* Main Content */}
             <div className="flex-1 relative overflow-hidden">
               {activeTab === 'editor' && (
-                <div className="absolute inset-0 pb-6">
+                <div className="absolute inset-0">
                   <Editor
                     height="100%"
                     language={room.language}
                     value={localCode}
                     onChange={handleEditorChange}
                     onMount={(editor) => {
-                      editor.onDidChangeCursorPosition(() => handleCursorChange(editor));
+                      editor.onDidChangeCursorPosition(() => {
+                        const position = editor.getPosition();
+                        if (position) {
+                          setCursorPosition({
+                            line: position.lineNumber,
+                            column: position.column
+                          });
+                          debouncedUpdatePresence(position);
+                        }
+                      });
                       // Set initial cursor position
                       const position = editor.getPosition();
-                      setCursorPosition({
-                        line: position.lineNumber,
-                        column: position.column
-                      });
+                      if (position) {
+                        setCursorPosition({
+                          line: position.lineNumber,
+                          column: position.column
+                        });
+                      }
                     }}
                     options={{
-                      fontFamily: "'Fira Code', monospace",
+                      fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      padding: { top: 16, bottom: 16 },
                       bracketPairColorization: { enabled: true },
-                      ...editorOptions
+                      guides: {
+                        bracketPairs: true,
+                        indentation: true,
+                      },
+                      minimap: { enabled: false },
+                      scrollBeyondLastLine: false,
+                      renderLineHighlight: 'all',
+                      cursorBlinking: 'smooth',
+                      cursorSmoothCaretAnimation: 'on',
+                      smoothScrolling: true,
+                      theme: "vs-dark",
+                      automaticLayout: true,
+                      tabSize: 2,
                     }}
                   />
                 </div>
               )}
 
               {activeTab === 'output' && (
-                <div className="absolute inset-0 pb-6">
+                <div className="absolute inset-0">
                   <div className="h-full flex flex-col">
-                    <div className="flex-1 overflow-auto p-4 font-mono bg-gray-900 text-gray-100">
-                      {output || "Run your code to see the output here..."}
+                    <div className="flex-1 overflow-auto font-mono text-sm bg-gray-900">
+                      {output ? (
+                        <div className="p-6">
+                          <pre className="whitespace-pre-wrap break-words text-gray-100">
+                            {output}
+                          </pre>
+                        </div>
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-gray-400">
+                          <div className="text-center">
+                            <svg className="w-12 h-12 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p className="text-lg font-medium">No Output Yet</p>
+                            <p className="text-sm mt-1">Run your code to see the output here</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     {executionTimestamp && (
-                      <div className="p-2 bg-gray-800 text-gray-400 text-xs border-t border-gray-700">
-                        <span>Executed at: {executionTimestamp.toLocaleTimeString()}</span>
-                        {executionTime && (
-                          <span className="ml-4">Duration: {executionTime}ms</span>
-                        )}
+                      <div className="flex items-center justify-between px-6 py-3 bg-gray-800 text-gray-400 text-xs border-t border-gray-700">
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Executed at {executionTimestamp.toLocaleTimeString()}</span>
+                          </div>
+                          {executionTime && (
+                            <div className="flex items-center space-x-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              <span>Duration: {executionTime}ms</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span>{room.language}</span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -800,70 +886,85 @@ function CodeEditor({ initialRoomId, onBack }: {
               )}
 
               {activeTab === 'review' && (
-                <div className="absolute inset-0 pb-6">
+                <div className="absolute inset-0">
                   <AIReviewPanel review={review} />
                 </div>
               )}
 
               {isLoading && (
-                <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center">
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
                   <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
-                    <p className="text-lg text-gray-700">Loading room...</p>
+                    <div className="w-16 h-16 mx-auto mb-4 relative">
+                      <div className="absolute inset-0 rounded-full border-t-2 border-b-2 border-indigo-500 animate-spin"></div>
+                      <div className="absolute inset-2 rounded-full border-t-2 border-b-2 border-indigo-400 animate-spin-reverse"></div>
+                      <div className="absolute inset-4 rounded-full border-t-2 border-b-2 border-indigo-300 animate-spin"></div>
+                    </div>
+                    <p className="text-lg font-medium text-gray-900">Loading room...</p>
+                    <p className="text-sm text-gray-500 mt-1">Please wait</p>
                   </div>
                 </div>
               )}
 
               {/* Footer */}
-              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-4 h-6 bg-gray-50 text-gray-600 text-xs border-t border-gray-200 z-10">
-                <div className="flex items-center space-x-4">
+              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between h-8 px-6 bg-gray-50 text-xs border-t border-gray-200">
+                <div className="flex items-center divide-x divide-gray-300">
                   {activeTab === 'editor' && (
                     <>
-                      <div>Ln {cursorPosition.line}, Col {cursorPosition.column}</div>
-                      <div>{wordCount} words</div>
-                      <div>{room.language}</div>
+                      <div className="pr-4 text-gray-600">
+                        Ln {cursorPosition.line}, Col {cursorPosition.column}
+                      </div>
+                      <div className="px-4 text-gray-600">{wordCount} words</div>
+                      <div className="px-4 font-medium text-gray-700">{room.language}</div>
                       {lastSaved && (
-                        <div>Last saved: {lastSaved.toLocaleTimeString()}</div>
+                        <div className="pl-4 text-gray-500">
+                          Last saved: {lastSaved.toLocaleTimeString()}
+                        </div>
                       )}
                     </>
                   )}
                   
-                  {activeTab === 'output' && (
+                  {activeTab === 'output' && executionTimestamp && (
                     <>
-                      <div>{room.language}</div>
-                      {executionTimestamp && (
-                        <>
-                          <div>Executed: {executionTimestamp.toLocaleTimeString()}</div>
-                          {executionTime && (
-                            <div>Duration: {executionTime}ms</div>
-                          )}
-                        </>
+                      <div className="pr-4 text-gray-600">{room.language}</div>
+                      <div className="px-4 text-gray-600">
+                        Executed: {executionTimestamp.toLocaleTimeString()}
+                      </div>
+                      {executionTime && (
+                        <div className="pl-4 text-gray-600">
+                          Duration: {executionTime}ms
+                        </div>
                       )}
                     </>
                   )}
                   
                   {activeTab === 'review' && review && (
                     <>
-                      <div>
+                      <div className="pr-4 text-gray-600">
                         Issues: {review.issues.length}
                       </div>
-                      <div>
+                      <div className="px-4 text-gray-600">
                         Suggestions: {review.suggestions.length}
                       </div>
-                      <div>
+                      <div className="px-4 text-gray-600">
                         Improvements: {review.improvements.length}
                       </div>
                       {review.issues.length > 0 && (
-                        <div className="flex items-center gap-1">
-                          <span>Severity:</span>
+                        <div className="pl-4 flex items-center gap-2">
+                          <span className="text-gray-600">Severity:</span>
                           {review.issues.some(i => i.severity === 'high') && (
-                            <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded">High</span>
+                            <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-medium">
+                              High
+                            </span>
                           )}
                           {review.issues.some(i => i.severity === 'medium') && (
-                            <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded">Medium</span>
+                            <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded text-[10px] font-medium">
+                              Medium
+                            </span>
                           )}
                           {review.issues.some(i => i.severity === 'low') && (
-                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">Low</span>
+                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-medium">
+                              Low
+                            </span>
                           )}
                         </div>
                       )}
@@ -871,17 +972,21 @@ function CodeEditor({ initialRoomId, onBack }: {
                   )}
                 </div>
                 
-                <div className="flex items-center space-x-4">
-                  {activeTab === 'review' && review ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-400">AI:</span>
-                      <span>{review._metadata?.model || 'Qwen2.5-Coder'}</span>
-                      {review._metadata?.created && (
-                        <>
-                          <span className="text-gray-400 ml-2">•</span>
-                          <span>{new Date(review._metadata.created * 1000).toLocaleTimeString()}</span>
-                        </>
-                      )}
+                <div className="flex items-center space-x-4 text-gray-500">
+                  {activeTab === 'review' && review?._metadata ? (
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        <span>{review._metadata.model}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{new Date(review._metadata.created * 1000).toLocaleTimeString()}</span>
+                      </div>
                     </div>
                   ) : (
                     <div>{new Date().toLocaleTimeString()}</div>
@@ -891,34 +996,62 @@ function CodeEditor({ initialRoomId, onBack }: {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-xl mb-4">Select a room from the sidebar</p>
+          <div className="flex-1 flex items-center justify-center bg-gray-50">
+            <div className="text-center max-w-md mx-auto px-6">
+              <svg className="w-16 h-16 mx-auto mb-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Select a Room</h3>
+              <p className="text-gray-600">
+                Choose a room from the sidebar to start coding or create a new one from the main menu
+              </p>
             </div>
           </div>
         )}
       </div>
 
       {/* Right Sidebar - Collaborators */}
-      <div className="w-64 border-l flex flex-col overflow-hidden">
-        <div className="p-4 border-b">
-          <h3 className="font-semibold">Collaborators</h3>
+      <div className="w-64 bg-white border-l border-gray-200 flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-gray-200 bg-gray-50">
+          <h3 className="font-semibold text-gray-900">Collaborators</h3>
         </div>
         <div className="flex-1 overflow-auto p-4">
           {presence && presence.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {presence.map((user) => (
-                <div key={user._id} className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full" />
-                  <span>{user.name}</span>
-                  <span className="text-xs text-gray-500">
-                    Line {user.cursor.line}
-                  </span>
+                <div 
+                  key={user._id} 
+                  className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-200"
+                >
+                  <div className="relative">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                      <span className="text-sm font-medium text-indigo-700">
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {user.name}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Line {user.cursor.line}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">No active collaborators</p>
+            <div className="text-center py-8">
+              <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <p className="text-sm text-gray-500">No active collaborators</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Share the room code to invite others
+              </p>
+            </div>
           )}
         </div>
       </div>
