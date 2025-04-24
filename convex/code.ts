@@ -88,7 +88,6 @@ export const executeCode = action({
 export const getAIAssistance = action({
   args: { code: v.string(), language: v.string() },
   handler: async (ctx, args) => {
-    // Create a custom fetch function for Nebius API
     const customFetch = async (url: string, options: RequestInit) => {
       const response = await fetch(url, {
         ...options,
@@ -101,14 +100,50 @@ export const getAIAssistance = action({
       return response;
     };
 
-    const systemPrompt = `You are an expert code reviewer. Analyze the code and provide a detailed review focusing on:
+    const systemPrompt = `You are an expert code reviewer. Analyze the code and provide a concise review focusing on:
 1. Code quality and best practices
 2. Performance improvements
 3. Security concerns
 4. Maintainability and readability
 5. Potential bugs and edge cases
 
-Return your analysis in a structured format that follows the schema provided.`;
+Your response MUST be a valid JSON object with this exact structure:
+{
+  "suggestions": [
+    {
+      "title": "string (max 50 chars)",
+      "description": "string (max 150 chars)",
+      "code": "string (max 100 chars, no docstrings or multiline code)",
+      "lineNumber": number
+    }
+  ],
+  "issues": [
+    {
+      "title": "string (max 50 chars)",
+      "description": "string (max 150 chars)",
+      "severity": "high|medium|low",
+      "code": "string (max 100 chars, no docstrings or multiline code)",
+      "lineNumber": number
+    }
+  ],
+  "improvements": [
+    {
+      "title": "string (max 50 chars)",
+      "description": "string (max 150 chars)",
+      "code": "string (max 100 chars, no docstrings or multiline code)",
+      "lineNumber": number
+    }
+  ]
+}
+
+IMPORTANT: 
+1. Return ONLY the JSON object, no other text
+2. The response must be valid JSON
+3. Keep all text fields within the specified length limits
+4. Provide at most 2 items per category
+5. Do not include any markdown formatting or code blocks
+6. Do not include docstrings or multiline code in code snippets
+7. Do not include any explanatory text before or after the JSON`;
 
     try {
       const response = await customFetch('https://api.studio.nebius.com/v1/chat/completions', {
@@ -116,13 +151,14 @@ Return your analysis in a structured format that follows the schema provided.`;
         body: JSON.stringify({
           model: "Qwen/Qwen2.5-Coder-32B-Instruct-fast",
           temperature: 0,
-          messages: [
-            {
-              role: "system",
+          max_tokens: 1000,
+      messages: [
+        {
+          role: "system",
               content: systemPrompt
-            },
-            {
-              role: "user",
+        },
+        {
+          role: "user",
               content: `Review this ${args.language} code:\n\n${args.code}`
             }
           ],
@@ -133,30 +169,92 @@ Return your analysis in a structured format that follows the schema provided.`;
       if (!response.ok) {
         const error = await response.text();
         console.error("Nebius API error:", error);
-        return "Error: Failed to get AI review";
+        throw new Error("Failed to get AI review");
       }
 
       const completion = await response.json();
+      console.log("Raw API response:", JSON.stringify(completion, null, 2));
+      
+      if (!completion.choices || !completion.choices[0] || !completion.choices[0].message) {
+        console.error("Invalid API response structure:", completion);
+        throw new Error("Invalid API response structure");
+      }
+
       const output = completion.choices[0].message;
+      console.log("Message content:", output.content);
       
       if (output.content) {
         try {
-          // Parse and validate the JSON response
-          const review = JSON.parse(output.content);
-          return JSON.stringify(review, null, 2); // Pretty print the JSON
+          // Remove any potential markdown code block markers and trim whitespace
+          const cleanContent = output.content
+            .replace(/```json\s*/g, '')
+            .replace(/```\s*/g, '')
+            // First unescape any escaped quotes within code snippets
+            .replace(/\\"/g, '"')
+            // Handle escaped backslashes in code snippets
+            .replace(/\\\\/g, '\\')
+            // Remove any trailing backslashes that might break JSON
+            .replace(/\\+\s*([,}])/g, '$1')
+            // Remove any remaining escaped characters that might break JSON
+            .replace(/\\[^"]|\\$/g, '')
+            // Remove trailing '>' characters
+            .replace(/>\s*$/g, '')
+            .trim();
+            
+          console.log("Cleaned content:", cleanContent);
+          
+          // First, try to parse the content as JSON
+          const review = JSON.parse(cleanContent);
+          
+          // Helper function to clean code snippets
+          const cleanCodeSnippet = (code: string) => {
+            return String(code || '')
+              .replace(/\\+$/g, '') // Remove trailing backslashes
+              .replace(/\\[^"]|\\$/g, '') // Remove any remaining escaped chars except quotes
+              .replace(/\s+/g, ' ') // Normalize whitespace
+              .trim()
+              .slice(0, 100);
+          };
+          
+          // Validate and normalize the structure
+          const validatedReview = {
+            suggestions: (review.suggestions || []).slice(0, 2).map((s: any) => ({
+              title: String(s.title || '').slice(0, 50),
+              description: String(s.description || '').slice(0, 150),
+              code: cleanCodeSnippet(s.code),
+              lineNumber: Number(s.lineNumber) || 1
+            })),
+            issues: (review.issues || []).slice(0, 2).map((i: any) => ({
+              title: String(i.title || '').slice(0, 50),
+              description: String(i.description || '').slice(0, 150),
+              severity: ['high', 'medium', 'low'].includes(i.severity) ? i.severity : 'medium',
+              code: cleanCodeSnippet(i.code),
+              lineNumber: Number(i.lineNumber) || 1
+            })),
+            improvements: (review.improvements || []).slice(0, 2).map((i: any) => ({
+              title: String(i.title || '').slice(0, 50),
+              description: String(i.description || '').slice(0, 150),
+              code: cleanCodeSnippet(i.code),
+              lineNumber: Number(i.lineNumber) || 1
+            }))
+          };
+          
+          // Return the stringified, validated JSON
+          return JSON.stringify(validatedReview);
         } catch (error) {
           console.error("Failed to parse AI response:", error);
-          return "Error: Failed to parse AI review response";
+          console.error("Content that failed to parse:", output.content);
+          throw new Error("Failed to parse AI response");
         }
       } else if (output.refusal) {
         console.error("AI refused to provide review:", output.refusal);
-        return "Error: AI was unable to review the code";
+        throw new Error("AI was unable to review the code");
+      } else {
+        throw new Error("No response from AI");
       }
-      
-      return "Error: No response from AI";
     } catch (error) {
       console.error("AI review error:", error);
-      return "Error: Failed to get AI review";
+      throw error;
     }
   },
 });

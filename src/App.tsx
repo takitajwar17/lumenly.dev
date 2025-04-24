@@ -7,6 +7,8 @@ import Editor from "@monaco-editor/react";
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { Id } from "../convex/_generated/dataModel";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
+import AIReviewPanel from "./AIReviewPanel";
+import { AIReview } from "./AIReviewPanel";
 
 // Debounce utility function
 function debounce<T extends (...args: any[]) => any>(
@@ -406,7 +408,7 @@ function CodeEditor({ initialRoomId, onBack }: {
   const [isGettingReview, setIsGettingReview] = useState(false);
   const [localCode, setLocalCode] = useState("");
   const [activeTab, setActiveTab] = useState<'editor' | 'output' | 'review'>('editor');
-  const [review, setReview] = useState<string | null>(null);
+  const [review, setReview] = useState<AIReview | null>(null);
   const [executionTimestamp, setExecutionTimestamp] = useState<Date | null>(null);
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [wordCount, setWordCount] = useState(0);
@@ -521,11 +523,13 @@ function CodeEditor({ initialRoomId, onBack }: {
     if (!code || !room) return;
     setIsGettingReview(true);
     try {
-      const suggestion = await getAIAssistance({ code, language: room.language });
-      setReview(suggestion);
+      const response = await getAIAssistance({ code, language: room.language });
+      // The response is already a JSON string from the backend
+      setReview(JSON.parse(response));
       setActiveTab('review');
     } catch (error) {
       toast.error("Failed to get AI assistance");
+      setReview(null);
     } finally {
       setIsGettingReview(false);
     }
@@ -757,7 +761,7 @@ function CodeEditor({ initialRoomId, onBack }: {
               {activeTab === 'output' && (
                 <div className="h-full flex flex-col">
                   <div className="flex-1 overflow-auto p-4 font-mono bg-gray-900 text-gray-100">
-                    {output || "Run your code to see the output here..."}
+                {output || "Run your code to see the output here..."}
                   </div>
                   {executionTimestamp && (
                     <div className="p-2 bg-gray-800 text-gray-400 text-xs border-t border-gray-700">
@@ -770,13 +774,9 @@ function CodeEditor({ initialRoomId, onBack }: {
                 </div>
               )}
 
-              {activeTab === 'review' && review && (
-                <div className="h-full overflow-auto p-4">
-                  <div className="max-w-3xl mx-auto space-y-4">
-                    <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                      <pre className="whitespace-pre-wrap text-sm text-gray-700">{review}</pre>
-                    </div>
-                  </div>
+              {activeTab === 'review' && (
+                <div className="h-full overflow-hidden">
+                  <AIReviewPanel review={review} />
                 </div>
               )}
 
