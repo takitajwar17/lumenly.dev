@@ -21,11 +21,23 @@ const applicationTables = {
     roomId: v.id("rooms"),
     userId: v.id("users"),
     name: v.string(),
+    isAnonymous: v.optional(v.boolean()),
+    nickname: v.optional(v.string()),
     cursor: v.object({
       line: v.number(),
       column: v.number(),
     }),
+    selection: v.optional(v.object({
+      startLine: v.number(),
+      startColumn: v.number(),
+      endLine: v.number(),
+      endColumn: v.number(),
+    })),
+    color: v.optional(v.string()),
     lastSeenTime: v.number(),
+    isActive: v.optional(v.boolean()),
+    isTyping: v.optional(v.boolean()),
+    lastActivity: v.optional(v.number()),
   }).index("by_room", ["roomId"]),
 };
 

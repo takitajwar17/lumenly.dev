@@ -10,7 +10,7 @@ export default {
       animation: {
         'spin-reverse': 'spin-reverse 1s linear infinite',
       },
-    },
+  },
   },
   plugins: [],
 }

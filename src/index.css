@@ -71,3 +71,93 @@ body {
 .link-text {
   @apply text-blue-500 hover:underline cursor-pointer font-medium;
 }
+
+/* Collaborator cursor styles */
+.collaborator-cursor {
+  position: relative;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.collaborator-cursor-after {
+  position: relative;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Provide default animation for all cursors */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Provide animation for the selections */
+@keyframes pulse-selection {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.2; }
+}
+
+.collaborator-selection {
+  position: relative;
+  pointer-events: none !important;
+  animation: pulse-selection 2s infinite;
+  z-index: 10;
+  mix-blend-mode: multiply;
+}
+
+/* Custom cursor element that will be styled with user-specific colors */
+[class^="cursor-"] {
+  position: relative;
+  pointer-events: none !important;
+  z-index: 100;
+}
+
+[class^="cursor-"]::after {
+  animation: blink-cursor 1s infinite;
+  pointer-events: none !important;
+  height: 20px !important;
+  border-width: 2px !important;
+}
+
+/* Tooltip only appears at the cursor position */
+[class^="cursor-"]::before {
+  position: absolute !important;
+  animation: cursor-appear 0.2s ease-out;
+  pointer-events: none !important;
+  z-index: 10000;
+  white-space: nowrap;
+  top: -20px;
+  left: 0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: bold;
+  opacity: 0.9;
+  transform: translateY(0);
+  transition: all 0.1s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Show tooltip on hover (slightly brighter) */
+[class^="cursor-"]:hover::before {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+/* Animation for cursor appearance */
+@keyframes cursor-appear {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 0.9; transform: translateY(0); }
+}
+
+/* Animation for cursor disappearance */
+@keyframes cursor-disappear {
+  from { opacity: 0.9; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-3px); }
+}
+
+/* Make selections fade out immediately when they end */
+[class^="selection-"] {
+  transition: opacity 0.1s ease-out !important;
+  opacity: 0.35 !important;
+}

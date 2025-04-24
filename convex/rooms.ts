@@ -207,6 +207,42 @@ export const updateCode = mutation({
   },
 });
 
+// Function to generate a creative nickname
+function generateNickname(): string {
+  const adjectives = [
+    "Swift", "Witty", "Clever", "Bright", "Sharp", "Nimble", "Agile", "Quick",
+    "Smart", "Perky", "Lively", "Eager", "Merry", "Happy", "Jolly", "Daring",
+    "Brave", "Bold", "Cosmic", "Mystic", "Quirky", "Zany", "Jazzy", "Funky",
+    "Snazzy", "Spiffy", "Groovy", "Awesome", "Epic", "Stellar", "Magical",
+    "Sparkly", "Glowing", "Radiant", "Dazzling", "Gleaming", "Shimmering"
+  ];
+  
+  const animals = [
+    "Fox", "Wolf", "Panda", "Tiger", "Lion", "Eagle", "Hawk", "Falcon", "Owl",
+    "Dolphin", "Penguin", "Koala", "Rabbit", "Squirrel", "Raccoon", "Badger",
+    "Lynx", "Hedgehog", "Otter", "Ferret", "Narwhal", "Axolotl", "Armadillo",
+    "Platypus", "Giraffe", "Elephant", "Octopus", "Peacock", "Flamingo",
+    "Chameleon", "Phoenix", "Dragon", "Griffin", "Unicorn", "Pegasus"
+  ];
+  
+  const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const randomAnimal = animals[Math.floor(Math.random() * animals.length)];
+  
+  return `${randomAdjective}${randomAnimal}`;
+}
+
+// Generate a unique color for each user
+function generateUserColor(): string {
+  // Using a set of colors that are visually distinct and accessible
+  const colors = [
+    "#FF5555", "#FF9933", "#FFCC33", "#33CC33", "#3399FF", 
+    "#9966CC", "#FF6699", "#00CCCC", "#99CC00", "#FF66CC",
+    "#CC6600", "#6699CC", "#CC3399", "#669933", "#9933CC"
+  ];
+  
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
 export const updatePresence = mutation({
   args: {
     roomId: v.id("rooms"),
@@ -214,6 +250,14 @@ export const updatePresence = mutation({
       line: v.number(),
       column: v.number(),
     }),
+    selection: v.optional(v.object({
+      startLine: v.number(),
+      startColumn: v.number(),
+      endLine: v.number(),
+      endColumn: v.number(),
+    })),
+    isActive: v.optional(v.boolean()),
+    isTyping: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -228,18 +272,36 @@ export const updatePresence = mutation({
       .filter((q) => q.eq(q.field("userId"), userId))
       .unique();
 
+    const now = Date.now();
+    const isAnonymous = !user.email || user.email.includes("anonymous");
+    
     if (existing) {
       await ctx.db.patch(existing._id, {
         cursor: args.cursor,
-        lastSeenTime: Date.now(),
+        selection: args.selection,
+        lastSeenTime: now,
+        isActive: args.isActive ?? existing.isActive ?? false,
+        isTyping: args.isTyping ?? existing.isTyping ?? false,
+        lastActivity: args.isActive ? now : existing.lastActivity,
       });
     } else {
+      // New presence entry - generate nickname and color
+      const nickname = generateNickname();
+      const color = generateUserColor();
+      
       await ctx.db.insert("presence", {
         roomId: args.roomId,
         userId,
         name: user.email ?? "Anonymous",
+        isAnonymous,
+        nickname: isAnonymous ? nickname : undefined,
         cursor: args.cursor,
-        lastSeenTime: Date.now(),
+        selection: args.selection,
+        color,
+        lastSeenTime: now,
+        isActive: args.isActive ?? false,
+        isTyping: args.isTyping ?? false,
+        lastActivity: args.isActive ? now : undefined,
       });
     }
   },
@@ -250,11 +312,21 @@ export const getPresence = query({
     roomId: v.id("rooms"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    // Get current user's ID to highlight it differently in the UI
+    const currentUserId = await getAuthUserId(ctx);
+    
+    // Filter for users seen in the last 2 minutes (120000ms)
+    const presence = await ctx.db
       .query("presence")
       .withIndex("by_room", (q) => q.eq("roomId", args.roomId))
-      .filter((q) => q.gt(q.field("lastSeenTime"), Date.now() - 30000))
+      .filter((q) => q.gt(q.field("lastSeenTime"), Date.now() - 120000))
       .collect();
+      
+    // Add a field to indicate if this is the current user
+    return presence.map(user => ({
+      ...user,
+      isCurrentUser: currentUserId ? user.userId === currentUserId : false
+    }));
   },
 });
 

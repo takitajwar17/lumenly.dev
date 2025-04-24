@@ -4,7 +4,7 @@ import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
 import { Toaster, toast } from "sonner";
 import Editor from "@monaco-editor/react";
-import { useCallback, useEffect, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { Id } from "../convex/_generated/dataModel";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import AIReviewPanel from "./AIReviewPanel";
@@ -437,7 +437,7 @@ function CodeRoom() {
 function CodeEditor({ initialRoomId, onBack }: { 
   initialRoomId: Id<"rooms"> | null, 
   onBack: () => void
-}) {
+}): React.ReactElement {
   const [selectedRoomId, setSelectedRoomId] = useState<Id<"rooms"> | null>(initialRoomId);
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
@@ -453,6 +453,8 @@ function CodeEditor({ initialRoomId, onBack }: {
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isUpdatingLanguage, setIsUpdatingLanguage] = useState(false);
+  const [lastTypingTime, setLastTypingTime] = useState<number>(0);
+  const [typingTimeoutId, setTypingTimeoutId] = useState<NodeJS.Timeout | null>(null);
   
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -470,6 +472,64 @@ function CodeEditor({ initialRoomId, onBack }: {
   const updatePresence = useMutation(api.rooms.updatePresence);
   const executeCode = useAction(api.code.executeCode);
   const getAIAssistance = useAction(api.code.getAIAssistance);
+  
+  // Track presence changes to show notifications
+  const [previousPresence, setPreviousPresence] = useState<any[]>([]);
+  const [activityLog, setActivityLog] = useState<{
+    type: 'join' | 'leave' | 'system';
+    user: any;
+    timestamp: number;
+    message?: string;
+  }[]>([]);
+  
+  // Check for new collaborators joining or leaving
+  useEffect(() => {
+    if (!presence) {
+      setPreviousPresence([]);
+      return;
+    }
+    
+    if (previousPresence.length > 0) {
+      // Find new collaborators (in current presence but not in previous)
+      const joiners = presence.filter(
+        current => !previousPresence.some(prev => prev._id === current._id)
+      );
+      
+      // Find collaborators who left (in previous but not in current)
+      const leavers = previousPresence.filter(
+        prev => !presence.some(current => current._id === prev._id)
+      );
+      
+      // Add to activity log
+      const newActivities = [
+        ...joiners.map(user => ({
+          type: 'join' as const,
+          user,
+          timestamp: Date.now()
+        })),
+        ...leavers.map(user => ({
+          type: 'leave' as const,
+          user,
+          timestamp: Date.now()
+        }))
+      ];
+      
+      if (newActivities.length > 0) {
+        setActivityLog(prev => [...newActivities, ...prev].slice(0, 10));
+      }
+    } else if (presence.length > 0) {
+      // Initial activity when component mounts and there are users
+      setActivityLog([{
+        type: 'system',
+        user: null,
+        timestamp: Date.now(),
+        message: `${presence.length} collaborator${presence.length !== 1 ? 's' : ''} online`
+      }]);
+    }
+    
+    // Just keep track of previous presence without toast notifications
+    setPreviousPresence(presence);
+  }, [presence]);
   
   // Set code when room changes
   useEffect(() => {
@@ -503,39 +563,222 @@ function CodeEditor({ initialRoomId, onBack }: {
   // Debounced cursor update function
   const debouncedUpdatePresence = useMemo(
     () =>
-      debounce((position: { lineNumber: number; column: number }) => {
+      debounce((position: { lineNumber: number; column: number }, selection?: any, isActive?: boolean) => {
         if (!selectedRoomId) return;
+        
+        const presenceData: any = {
+          roomId: selectedRoomId,
+          cursor: {
+            line: position.lineNumber,
+            column: position.column,
+          },
+          isActive,
+        };
+        
+        // Add selection data if available
+        if (selection && 
+            selection.startLineNumber !== undefined && 
+            selection.endLineNumber !== undefined) {
+          presenceData.selection = {
+            startLine: selection.startLineNumber,
+            startColumn: selection.startColumn,
+            endLine: selection.endLineNumber,
+            endColumn: selection.endColumn,
+          };
+        }
+        
+        void updatePresence(presenceData);
+      }, 100), // 100ms debounce delay for cursor
+    [selectedRoomId, updatePresence]
+  );
+
+  // Update presence tracking effect
+  useEffect(() => {
+    if (!selectedRoomId || !editorRef.current) return;
+    
+    // Update presence in intervals to ensure consistent visibility
+    const intervalId = setInterval(() => {
+      const position = editorRef.current.getPosition();
+      const selection = editorRef.current.getSelection();
+      
+      if (position) {
+        // For interval updates, always set isTyping to false
         void updatePresence({
           roomId: selectedRoomId,
           cursor: {
             line: position.lineNumber,
             column: position.column,
           },
+          selection: selection ? {
+            startLine: selection.startLineNumber,
+            startColumn: selection.startColumn,
+            endLine: selection.endLineNumber,
+            endColumn: selection.endColumn,
+          } : undefined,
+          isActive: false,
+          isTyping: false
         });
-      }, 100), // 100ms debounce delay for cursor
-    [selectedRoomId, updatePresence]
-  );
+      }
+    }, 5000); // Update every 5 seconds
+    
+    // Clean up the interval and any active typing timeout when unmounting
+    return () => {
+      clearInterval(intervalId);
+      if (typingTimeoutId) {
+        clearTimeout(typingTimeoutId);
+      }
+    };
+  }, [selectedRoomId, updatePresence, typingTimeoutId]);
+  
+  // Store editor instance reference
+  const editorRef = useRef<any>(null);
 
   const handleEditorChange = useCallback((value: string | undefined) => {
-    if (!value) return;
+    if (!value || !selectedRoomId) return;
     setLocalCode(value); // Update local state immediately
     setCode(value);
+    
     // Calculate word count
     const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
     setWordCount(wordCount);
     debouncedUpdateCode(value); // Debounced server update
-  }, [debouncedUpdateCode]);
+    
+    // Update typing timestamp
+    setLastTypingTime(Date.now());
+    
+    // User is actively typing - only this event should mark as typing
+    if (editorRef.current) {
+      const position = editorRef.current.getPosition();
+      const selection = editorRef.current.getSelection();
+      
+      if (position && selectedRoomId) {
+        // Set both isActive and isTyping to true for actual text changes
+        void updatePresence({
+          roomId: selectedRoomId,
+          cursor: {
+            line: position.lineNumber,
+            column: position.column,
+          },
+          selection: selection ? {
+            startLine: selection.startLineNumber,
+            startColumn: selection.startColumn,
+            endLine: selection.endLineNumber,
+            endColumn: selection.endColumn,
+          } : undefined,
+          isActive: true,
+          isTyping: true
+        });
+        
+        // Clear any existing typing timeout
+        if (typingTimeoutId) {
+          clearTimeout(typingTimeoutId);
+        }
+        
+        // Set a new timeout to turn off the typing flag after 500ms of inactivity
+        const timeoutId = setTimeout(() => {
+          if (editorRef.current && selectedRoomId) {
+            const currentPosition = editorRef.current.getPosition();
+            const currentSelection = editorRef.current.getSelection();
+            
+            if (currentPosition) {
+              void updatePresence({
+                roomId: selectedRoomId,
+                cursor: {
+                  line: currentPosition.lineNumber,
+                  column: currentPosition.column,
+                },
+                selection: currentSelection ? {
+                  startLine: currentSelection.startLineNumber,
+                  startColumn: currentSelection.startColumn,
+                  endLine: currentSelection.endLineNumber,
+                  endColumn: currentSelection.endColumn,
+                } : undefined,
+                isActive: true,
+                isTyping: false // Turn off typing status
+              });
+            }
+          }
+        }, 500);
+        
+        setTypingTimeoutId(timeoutId);
+      }
+    }
+  }, [selectedRoomId, updatePresence, debouncedUpdateCode, typingTimeoutId]);
 
-  const handleCursorChange = useCallback((editor: any) => {
-    if (!selectedRoomId) return;
-    const position = editor.getPosition();
-    setCursorPosition({
-      line: position.lineNumber,
-      column: position.column
+  // Add an additional handler for selection changes
+  useEffect(() => {
+    if (!editorRef.current || !selectedRoomId) return;
+    
+    // Add selection change listener
+    const editor = editorRef.current;
+    const selectionChangeDisposable = editor.onDidChangeCursorSelection((e: any) => {
+      // Only consider it a selection if text is actually selected
+      const isTextSelected = e.selection && 
+        (e.selection.startLineNumber !== e.selection.endLineNumber || 
+         e.selection.startColumn !== e.selection.endColumn);
+      
+      // When selection changes, update presence
+      const position = editor.getPosition();
+      if (position) {
+        // For selection changes, don't change the typing status
+        // That should only be set by actual typing events
+        void updatePresence({
+          roomId: selectedRoomId,
+          cursor: {
+            line: position.lineNumber,
+            column: position.column,
+          },
+          selection: isTextSelected ? {
+            startLine: e.selection.startLineNumber,
+            startColumn: e.selection.startColumn,
+            endLine: e.selection.endLineNumber,
+            endColumn: e.selection.endColumn,
+          } : undefined,
+          isActive: true,
+          // Don't set isTyping here - let the typing handler manage that
+        });
+      }
     });
-    debouncedUpdatePresence(position);
-  }, [selectedRoomId, debouncedUpdatePresence]);
-
+    
+    // Clean up listener on unmount
+    return () => {
+      selectionChangeDisposable.dispose();
+    };
+  }, [selectedRoomId, updatePresence]);
+  
+  // For cursor movement without typing, add a separate handler
+  useEffect(() => {
+    if (!editorRef.current || !selectedRoomId) return;
+    
+    const editor = editorRef.current;
+    const cursorPositionDisposable = editor.onDidChangeCursorPosition((e: any) => {
+      // Only handle if this is just a cursor move, not a selection
+      const selection = editor.getSelection();
+      const isJustCursorMove = !selection || 
+        (selection.startLineNumber === selection.endLineNumber && 
+         selection.startColumn === selection.endColumn);
+      
+      if (isJustCursorMove) {
+        // For cursor moves, don't change the typing status
+        // That should only be set by actual typing events
+        void updatePresence({
+          roomId: selectedRoomId,
+          cursor: {
+            line: e.position.lineNumber,
+            column: e.position.column,
+          },
+          selection: undefined,
+          isActive: true,
+          // Don't set isTyping here - let the typing handler manage that
+        });
+      }
+    });
+    
+    return () => {
+      cursorPositionDisposable.dispose();
+    };
+  }, [selectedRoomId, updatePresence]);
+  
   // Update word count on initial load
   useEffect(() => {
     if (localCode) {
@@ -641,6 +884,112 @@ function CodeEditor({ initialRoomId, onBack }: {
     void handleLanguageChange(language);
   }, [handleLanguageChange]);
 
+  // Function to handle cursor decorations
+  const updateCursorDecorations = (editor: any, otherUsers: Array<any>) => {
+    // This function is no longer used - remove it
+  };
+
+  // Style application function
+  const applyStyleForUser = (name: string, color: string) => {
+    // This function is no longer used - remove it
+  };
+
+  // Function to clean up styles
+  const cleanupUserStyles = () => {
+    // This function is no longer used - remove it
+  };
+
+  // Function to determine user activity status based on presence data
+  const getUserActivityStatus = (user: any) => {
+    if (!user) return 'offline';
+    
+    const now = Date.now();
+    const lastActive = user.lastActivity || 0;
+    const timeSinceActive = now - lastActive;
+    
+    // Check if there's an active selection first
+    if (user.selection && 
+        (user.selection.startLine !== user.selection.endLine || 
+         user.selection.startColumn !== user.selection.endColumn)) {
+      return 'selecting';
+    }
+    
+    // Then check active states
+    if (user.isTyping) {
+      // Use the isTyping flag directly - the timeout will turn this off
+      return 'typing';
+    } else if (timeSinceActive < 10000) {
+      // Active in the last 10 seconds, but not typing - likely just moving cursor
+      return 'editing';
+    } else if (timeSinceActive < 60000) {
+      // Active in the last minute
+      return 'active';
+    } else if (timeSinceActive < 300000) {
+      // Active in the last 5 minutes
+      return 'idle';
+    } else {
+      // Inactive for more than 5 minutes
+      return 'away';
+    }
+  };
+  
+  // Function to get text and style for activity status
+  const getActivityDisplay = (status: string) => {
+    switch (status) {
+      case 'typing':
+        return { text: 'Typing...', className: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' };
+      case 'editing':
+        return { text: 'Focused', className: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' };
+      case 'selecting':
+        return { text: 'Selecting', className: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' };
+      case 'active':
+        return { text: 'Focused', className: 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300' };
+      case 'idle':
+        return { text: 'Idle', className: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' };
+      case 'away':
+        return { text: 'Away', className: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400' };
+      default:
+        return { text: 'Offline', className: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400' };
+    }
+  };
+  
+  // Function to get additional activity info text
+  const getActivityDetails = (user: any) => {
+    if (!user) return '';
+    
+    const status = getUserActivityStatus(user);
+    
+    // For selection, show how many lines are selected
+    if (status === 'selecting' && user.selection) {
+      const lineCount = Math.abs(user.selection.endLine - user.selection.startLine) + 1;
+      return `${lineCount} line${lineCount !== 1 ? 's' : ''} selected`;
+    }
+    
+    // For typing/editing, show the line number they're on
+    if (['typing', 'editing', 'active'].includes(status) && user.cursor) {
+      return `Line ${user.cursor.line}`;
+    }
+    
+    // For idle/away, show when they were last active
+    if (['idle', 'away'].includes(status) && user.lastActivity) {
+      const now = Date.now();
+      const lastActive = user.lastActivity;
+      const timeDiff = now - lastActive;
+      
+      if (timeDiff < 60000) {
+        return 'Active moments ago';
+      } else if (timeDiff < 3600000) {
+        const minutes = Math.floor(timeDiff / 60000);
+        return `Active ${minutes} min${minutes !== 1 ? 's' : ''} ago`;
+      } else {
+        const hours = Math.floor(timeDiff / 3600000);
+        return `Active ${hours} hour${hours !== 1 ? 's' : ''} ago`;
+      }
+    }
+    
+    return '';
+  };
+
   if (isLoading && !room) {
     return (
       <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-900 transition-colors">
@@ -735,8 +1084,42 @@ function CodeEditor({ initialRoomId, onBack }: {
                       {isUpdatingLanguage && (
                         <div className="ml-2 w-4 h-4 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin"></div>
                       )}
-                    </div>
                   </div>
+                  </div>
+                  {presence && presence.length > 0 && (
+                    <div className="flex items-center space-x-2 pl-4 border-l border-gray-200 dark:border-gray-700">
+                      <FiUsers className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      <div className="flex -space-x-2">
+                        {presence.slice(0, 3).map((user) => (
+                          <div 
+                            key={user._id}
+                            className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center" 
+                            style={{ 
+                              backgroundColor: user.color ? user.color : '#6366F1',
+                              zIndex: user.isCurrentUser ? 10 : 5
+                            }}
+                            title={user.isAnonymous && user.nickname
+                              ? user.nickname
+                              : (user.name.includes('@') 
+                                ? user.name.split('@')[0]
+                                : user.name)
+                            }
+                          >
+                            <span className="text-[10px] font-bold text-white">
+                              {user.isAnonymous && user.nickname
+                                ? user.nickname.substring(0, 1)
+                                : user.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        ))}
+                        {presence.length > 3 && (
+                          <div className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-700 flex items-center justify-center z-20">
+                            <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300">+{presence.length - 3}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex items-center space-x-3">
@@ -871,24 +1254,35 @@ function CodeEditor({ initialRoomId, onBack }: {
                     language={room.language}
                     value={localCode}
                     onChange={handleEditorChange}
-                    onMount={(editor) => {
+                    onMount={(editor, monaco) => {
+                      // Store editor reference
+                      editorRef.current = editor;
+                      
                       editor.onDidChangeCursorPosition(() => {
                         const position = editor.getPosition();
+                        const selection = editor.getSelection();
                         if (position) {
                           setCursorPosition({
                             line: position.lineNumber,
                             column: position.column
                           });
-                          debouncedUpdatePresence(position);
+                          debouncedUpdatePresence(position, selection, true);
                         }
                       });
+                      
                       // Set initial cursor position
                       const position = editor.getPosition();
                       if (position) {
-                      setCursorPosition({
-                        line: position.lineNumber,
-                        column: position.column
-                      });
+                        setCursorPosition({
+                          line: position.lineNumber,
+                          column: position.column
+                        });
+                      }
+                      
+                      // Initial decoration update if presence exists
+                      if (presence) {
+                        const otherUsers = presence.filter(user => !user.isCurrentUser);
+                        updateCursorDecorations(editor, otherUsers);
                       }
                     }}
                     options={{
@@ -1091,34 +1485,78 @@ function CodeEditor({ initialRoomId, onBack }: {
           <h3 className="font-semibold text-gray-900 dark:text-white transition-colors flex items-center">
             <FiUsers className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
             Collaborators
+            {presence && presence.length > 0 && (
+              <span className="ml-2 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-full px-2 py-0.5 transition-colors">
+                {presence.length}
+              </span>
+            )}
           </h3>
         </div>
         <div className="flex-1 overflow-auto p-4">
           {presence && presence.length > 0 ? (
             <div className="space-y-3">
-              {presence.map((user) => (
-                <div 
-                  key={user._id} 
-                  className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 transition-colors"
-                >
-                  <div className="relative">
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center transition-colors">
-                      <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300 transition-colors">
-                        {user.name.charAt(0).toUpperCase()}
-                  </span>
+              {presence.map((user) => {
+                const activityStatus = getUserActivityStatus(user);
+                const activityDisplay = getActivityDisplay(activityStatus);
+                
+                return (
+                  <div 
+                    key={user._id} 
+                    className={`flex items-center gap-3 p-2.5 rounded-lg ${
+                      user.isCurrentUser 
+                        ? 'bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800'
+                        : 'bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700'
+                    } transition-colors`}
+                  >
+                    <div className="relative">
+                      <div 
+                        className="w-8 h-8 rounded-full flex items-center justify-center transition-colors" 
+                        style={{ 
+                          backgroundColor: user.color ? `${user.color}20` : 'rgba(99, 102, 241, 0.1)', 
+                          color: user.color || '#6366F1'
+                        }}
+                      >
+                        <span className="text-sm font-medium" style={{ color: user.color || 'inherit' }}>
+                          {user.isAnonymous && user.nickname
+                            ? user.nickname.substring(0, 2)
+                            : user.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div 
+                        className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 transition-colors ${
+                          activityStatus === 'typing' || activityStatus === 'editing' || activityStatus === 'active'
+                            ? 'bg-green-400 dark:bg-green-500' 
+                            : activityStatus === 'selecting' || activityStatus === 'idle'
+                              ? 'bg-yellow-400 dark:bg-yellow-500'
+                              : 'bg-gray-300 dark:bg-gray-600'
+                        }`} 
+                      />
                     </div>
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 dark:bg-green-500 border-2 border-white dark:border-gray-800 transition-colors" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate transition-colors flex items-center">
+                        {user.isAnonymous && user.nickname
+                          ? user.nickname
+                          : (user.name.includes('@') 
+                              ? user.name.split('@')[0]
+                              : user.name)
+                        }
+                        {user.isCurrentUser && (
+                          <span className="ml-2 text-xs text-indigo-500 dark:text-indigo-400 font-normal">(you)</span>
+                        )}
+                      </p>
+                      <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 transition-colors">
+                        <span className={`inline-flex items-center rounded-full text-[10px] px-1.5 py-0.5 ${activityDisplay.className}`}>
+                          {activityDisplay.text}
+                        </span>
+                        
+                        <span className="ml-2 text-gray-400 dark:text-gray-500">
+                          {getActivityDetails(user)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate transition-colors">
-                      {user.name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                      Line {user.cursor.line}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8">
@@ -1130,6 +1568,69 @@ function CodeEditor({ initialRoomId, onBack }: {
             </div>
           )}
         </div>
+        
+        {/* Keep the activity feed component as is */}
+        {presence && presence.length > 0 && (
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 transition-colors max-h-48 overflow-auto">
+            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 transition-colors flex justify-between items-center">
+              <span>Activity</span>
+              {activityLog.length > 0 && (
+                <button 
+                  onClick={() => setActivityLog([])} 
+                  className="text-xs text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
+                  title="Clear activity log"
+                >
+                  Clear
+                </button>
+              )}
+            </h4>
+            <div className="space-y-2 text-xs">
+              {activityLog.length === 0 ? (
+                <p className="text-gray-400 dark:text-gray-500 italic">No recent activity</p>
+              ) : (
+                activityLog.map((activity, index) => {
+                  const time = new Date(activity.timestamp);
+                  const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  
+                  if (activity.type === 'system') {
+                    return (
+                      <div key={`system-${index}`} className="flex items-center py-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-2"></div>
+                        <span className="text-gray-600 dark:text-gray-300">{activity.message}</span>
+                        <span className="text-gray-400 dark:text-gray-500 ml-auto text-[10px]">{timeString}</span>
+                      </div>
+                    );
+                  }
+                  
+                  const user = activity.user;
+                  if (!user) return null;
+                  
+                  const displayName = user.isAnonymous && user.nickname 
+                    ? user.nickname 
+                    : (user.name.includes('@') ? user.name.split('@')[0] : user.name);
+                    
+                  return (
+                    <div key={`${activity.type}-${user._id}-${activity.timestamp}`} className="flex items-center py-1">
+                      <div className={`w-1.5 h-1.5 rounded-full ${
+                        activity.type === 'join' ? 'bg-green-500' : 'bg-gray-400'
+                      } mr-2`}></div>
+                      <span 
+                        className="text-gray-600 dark:text-gray-300 font-medium"
+                        style={{ color: user.color ? user.color : undefined }}
+                      >
+                        {displayName}
+                      </span>
+                      <span className="text-gray-500 dark:text-gray-400 ml-1">
+                        {activity.type === 'join' ? 'joined' : 'left'}
+                      </span>
+                      <span className="text-gray-400 dark:text-gray-500 ml-auto text-[10px]">{timeString}</span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
