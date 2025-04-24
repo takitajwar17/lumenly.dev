@@ -130,27 +130,38 @@ const AIReviewPanel = ({ review }: AIReviewPanelProps) => {
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 space-y-4">
-          <ReviewSection
-            title="Issues"
-            items={issues}
-            icon={FiAlertTriangle}
-            isExpanded={expandedSection === "issues"}
-            onToggle={() => handleSectionToggle("issues")}
-          />
-          <ReviewSection
-            title="Suggestions"
-            items={suggestions}
-            icon={FiInfo}
-            isExpanded={expandedSection === "suggestions"}
-            onToggle={() => handleSectionToggle("suggestions")}
-          />
-          <ReviewSection
-            title="Improvements"
-            items={improvements}
-            icon={FiZap}
-            isExpanded={expandedSection === "improvements"}
-            onToggle={() => handleSectionToggle("improvements")}
-          />
+          {issues.length > 0 && (
+            <ReviewSection
+              title="Issues"
+              items={issues}
+              icon={FiAlertTriangle}
+              isExpanded={expandedSection === "issues"}
+              onToggle={() => handleSectionToggle("issues")}
+            />
+          )}
+          {suggestions.length > 0 && (
+            <ReviewSection
+              title="Suggestions"
+              items={suggestions}
+              icon={FiInfo}
+              isExpanded={expandedSection === "suggestions"}
+              onToggle={() => handleSectionToggle("suggestions")}
+            />
+          )}
+          {improvements.length > 0 && (
+            <ReviewSection
+              title="Improvements"
+              items={improvements}
+              icon={FiZap}
+              isExpanded={expandedSection === "improvements"}
+              onToggle={() => handleSectionToggle("improvements")}
+            />
+          )}
+          {issues.length === 0 && suggestions.length === 0 && improvements.length === 0 && (
+            <div className="text-center py-8 text-gray-400">
+              <p>No review items to display.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
