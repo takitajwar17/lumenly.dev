@@ -4,15 +4,23 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useTheme } from "../ThemeContext";
 import { toast } from "sonner";
+import { 
+  SiJavascript, 
+  SiTypescript, 
+  SiPython,
+  SiCplusplus, 
+  SiSharp 
+} from "react-icons/si";
+import { FaJava } from "react-icons/fa";
 
 // Popular programming languages for quick selection
 const POPULAR_LANGUAGES = [
-  { id: "javascript", name: "JavaScript", icon: "JS" },
-  { id: "typescript", name: "TypeScript", icon: "TS" },
-  { id: "python", name: "Python", icon: "PY" },
-  { id: "java", name: "Java", icon: "JV" },
-  { id: "cpp", name: "C++", icon: "C++" },
-  { id: "csharp", name: "C#", icon: "C#" },
+  { id: "javascript", name: "JavaScript", icon: SiJavascript, color: "#F7DF1E" },
+  { id: "typescript", name: "TypeScript", icon: SiTypescript, color: "#3178C6" },
+  { id: "python", name: "Python", icon: SiPython, color: "#3776AB" },
+  { id: "java", name: "Java", icon: FaJava, color: "#007396" },
+  { id: "cpp", name: "C++", icon: SiCplusplus, color: "#00599C" },
+  { id: "csharp", name: "C#", icon: SiSharp, color: "#239120" },
 ];
 
 /**
@@ -31,7 +39,7 @@ export default function CodeRoom() {
   const rooms = useQuery(api.rooms.list);
   const createRoom = useMutation(api.rooms.create);
   const joinRoomByCode = useMutation(api.rooms.joinByCode);
-  const { theme } = useTheme();
+  const { theme: _ } = useTheme();
   
   // Fetch available languages
   useEffect(() => {
@@ -70,7 +78,7 @@ export default function CodeRoom() {
       
       setIsCreateModalOpen(false);
       toast.success("Room created successfully!");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to create room");
     } finally {
       setIsLoading(false);
@@ -92,7 +100,7 @@ export default function CodeRoom() {
       void navigate(`/room/${joinCode}`);
       
       toast.success("Joined room successfully!");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to join room. Invalid code.");
       setIsLoading(false);
     }
@@ -139,23 +147,26 @@ export default function CodeRoom() {
                 {!showAllLanguages ? (
                   <>
                     <div className="grid grid-cols-3 gap-2 mb-3">
-                      {POPULAR_LANGUAGES.map(lang => (
-                        <button
-                          key={lang.id}
-                          type="button"
-                          onClick={() => setNewRoomLanguage(lang.id)}
-                          className={`p-2 rounded-lg border transition-all ${newRoomLanguage === lang.id 
-                            ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 shadow-sm' 
-                            : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300'}`}
-                        >
-                          <div className="flex flex-col items-center">
-                            <div className="w-9 h-9 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg mb-1.5 text-xs font-semibold">
-                              {lang.icon}
+                      {POPULAR_LANGUAGES.map(lang => {
+                        const IconComponent = lang.icon;
+                        return (
+                          <button
+                            key={lang.id}
+                            type="button"
+                            onClick={() => setNewRoomLanguage(lang.id)}
+                            className={`p-2 rounded-lg border transition-all ${newRoomLanguage === lang.id 
+                              ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 shadow-sm' 
+                              : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300'}`}
+                          >
+                            <div className="flex flex-col items-center">
+                              <div className="w-9 h-9 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg mb-1.5">
+                                <IconComponent size={24} color={lang.color} />
+                              </div>
+                              <span className="text-xs">{lang.name}</span>
                             </div>
-                            <span className="text-xs">{lang.name}</span>
-                          </div>
-                        </button>
-                      ))}
+                          </button>
+                        );
+                      })}
                     </div>
                     <button
                       type="button"
