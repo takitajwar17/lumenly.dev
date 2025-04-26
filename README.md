@@ -1,9 +1,32 @@
-# Initial Setup
-  
-This is a project built with [Chef](https://chef.convex.dev) using [Convex](https://convex.dev) as its backend.
-  
-This project is connected to the Convex deployment named [`cool-dogfish-284`](https://dashboard.convex.dev/d/cool-dogfish-284).
-  
+# flex-template
+This is a project built with [lumenly.dev](https://lumenly.dev) using [Convex](https://convex.dev) as its backend.
+
+## Installation
+
+### 1. Git Clone Template
+
+```bash
+git clone git@github.com:get-convex/flex-template.git
+cd flex-template
+```
+
+### 2. Create a Convex project:
+
+```bash
+npx convex login
+npx convex init --empty
+```
+
+### 3. Run the app
+
+lumenly.dev apps use [Convex Auth](https://auth.convex.dev/) with Anonymous auth for easy sign in. You may wish to change this before deploying your app.
+
+```bash
+npm i && npm run dev
+```
+
+Once the app is running, you'll need to sign in (anonymously) and then create a room from the app's interface.
+
 ## Project structure
   
 The frontend code is in the `app` directory and is built with [Vite](https://vitejs.dev/).
