@@ -108,6 +108,24 @@ export default function AppContent() {
     setMounted(true);
   }, []);
   
+  // Handle redirect from session storage if user refreshed a deep-linked page
+  useEffect(() => {
+    // Use a flag to ensure this runs only once
+    const redirected = sessionStorage.getItem('redirected');
+    if (!redirected) {
+      const redirectPath = sessionStorage.getItem('redirectPath');
+      if (redirectPath) {
+        // Mark as redirected to prevent redirect loops
+        sessionStorage.setItem('redirected', 'true');
+        // Allow navigation to happen naturally on normal page loads
+        setTimeout(() => {
+          // Clear the redirect path after use
+          sessionStorage.removeItem('redirectPath');
+        }, 1000);
+      }
+    }
+  }, []);
+  
   return (
     <BrowserRouter>
       <style>{logoStyles}</style>
@@ -117,7 +135,18 @@ export default function AppContent() {
         <main className="flex-1 flex overflow-hidden w-full">
           <Authenticated>
             <Routes>
-              <Route path="/" element={<Navigate to="/room" replace />} />
+              <Route path="/" element={
+                // Check if we need to restore a previous path
+                (() => {
+                  const redirectPath = sessionStorage.getItem('redirectPath');
+                  if (redirectPath) {
+                    sessionStorage.removeItem('redirectPath');
+                    sessionStorage.removeItem('redirected');
+                    return <Navigate to={redirectPath} replace />;
+                  }
+                  return <Navigate to="/room" replace />;
+                })()
+              } />
               <Route path="/room" element={<div className="w-full h-full"><CodeRoom /></div>} />
               <Route path="/room/:roomCode" element={<div className="w-full h-full"><RoomRouteHandler /></div>} />
               <Route path="*" element={<Navigate to="/room" replace />} />

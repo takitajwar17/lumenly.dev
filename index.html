@@ -8,6 +8,15 @@
     <title>lumenly</title>
 
     <meta property="og:image" content="/og-preview.jpg" />
+    <script>
+      // This script helps with client-side routing to prevent 404 errors on refresh
+      (function() {
+        // Store the current path in session storage on page load
+        if (window.location.pathname !== '/') {
+          sessionStorage.setItem('redirectPath', window.location.pathname + window.location.search);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
