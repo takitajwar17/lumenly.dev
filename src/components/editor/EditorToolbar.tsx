@@ -5,6 +5,7 @@ import { detectLanguage } from "../../utils/languageDetection";
 import { supportedLanguages } from "../../utils/supportedLanguages";
 import FileUploadButton from "../../FileUploadButton";
 import ConfirmModal from "../../ConfirmModal";
+import { useTheme } from "../../ThemeContext";
 
 // Define a proper type for user presence
 interface UserPresence {
@@ -52,6 +53,8 @@ export default function EditorToolbar({
   presence
 }: EditorToolbarProps) {
   const [isConfirmClearModalOpen, setIsConfirmClearModalOpen] = useState(false);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const handleClearButtonClick = () => {
     setIsConfirmClearModalOpen(true);
@@ -67,15 +70,15 @@ export default function EditorToolbar({
   };
 
   return (
-    <div className="flex-none border-b border-gray-700">
+    <div className={`flex-none border-b ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
       {/* Top bar with file info and actions */}
-      <div className="flex items-center justify-between px-6 py-3 bg-gray-800">
+      <div className={`flex items-center justify-between px-6 py-3 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
         <div className="flex items-center space-x-6">
-          <h2 className="text-lg font-semibold text-white">{room.name}</h2>
+          <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{room.name}</h2>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-400">Language:</span>
+            <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Language:</span>
             <div className="flex items-center">
-              <span className="text-sm font-medium px-2 py-1 bg-gray-700 rounded-md text-gray-300">
+              <span className={`text-sm font-medium px-2 py-1 rounded-md ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>
                 {room.language}
               </span>
               {isUpdatingLanguage && (
@@ -84,13 +87,13 @@ export default function EditorToolbar({
             </div>
           </div>
           {presence && presence.length > 0 && (
-            <div className="flex items-center space-x-2 pl-4 border-l border-gray-700">
-              <FiUsers className="w-4 h-4 text-gray-400" />
+            <div className={`flex items-center space-x-2 pl-4 border-l ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
+              <FiUsers className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
               <div className="flex -space-x-2">
                 {presence.slice(0, 3).map((user) => (
                   <div 
                     key={user._id}
-                    className="w-6 h-6 rounded-full border-2 border-gray-800 flex items-center justify-center" 
+                    className={`w-6 h-6 rounded-full border-2 ${isDark ? 'border-gray-800' : 'border-gray-100'} flex items-center justify-center`}
                     style={{ 
                       backgroundColor: user.color || '#6366F1',
                       zIndex: user.isCurrentUser ? 10 : 5
@@ -110,8 +113,8 @@ export default function EditorToolbar({
                   </div>
                 ))}
                 {presence.length > 3 && (
-                  <div className="w-6 h-6 rounded-full border-2 border-gray-800 bg-gray-700 flex items-center justify-center z-20">
-                    <span className="text-[10px] font-bold text-gray-300">+{presence.length - 3}</span>
+                  <div className={`w-6 h-6 rounded-full border-2 ${isDark ? 'border-gray-800 bg-gray-700' : 'border-gray-100 bg-gray-300'} flex items-center justify-center z-20`}>
+                    <span className={`text-[10px] font-bold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>+{presence.length - 3}</span>
                   </div>
                 )}
               </div>
@@ -123,12 +126,12 @@ export default function EditorToolbar({
           <FileUploadButton 
             onFileContent={onUploadCode}
             onLanguageDetected={onLanguageDetected}
-            className="p-2 text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded-lg"
+            className={`p-2 ${isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'} rounded-lg`}
           />
           
           <button
             onClick={onCopyCode}
-            className="p-2 text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded-lg"
+            className={`p-2 ${isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'} rounded-lg`}
             title="Copy code"
           >
             <FiCopy className="w-5 h-5" />
@@ -136,7 +139,7 @@ export default function EditorToolbar({
           
           <button
             onClick={handleClearButtonClick}
-            className="p-2 text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded-lg"
+            className={`p-2 ${isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'} rounded-lg`}
             title="Clear code"
           >
             <FiTrash2 className="w-5 h-5" />
@@ -145,15 +148,15 @@ export default function EditorToolbar({
       </div>
 
       {/* Action toolbar */}
-      <div className="flex items-center justify-between px-6 py-2 bg-gray-800/50 border-t border-gray-700/50">
+      <div className={`flex items-center justify-between px-6 py-2 ${isDark ? 'bg-gray-800/50 border-t border-gray-700/50' : 'bg-gray-100/80 border-t border-gray-300/50'}`}>
         <div className="flex items-center space-x-3">
           <button
             onClick={onRunCode}
             disabled={isRunningCode}
             className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${
               isRunningCode
-                ? 'bg-blue-900/20 text-blue-300 cursor-not-allowed'
-                : 'bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700'
+                ? isDark ? 'bg-blue-900/20 text-blue-300 cursor-not-allowed' : 'bg-blue-100 text-blue-400 cursor-not-allowed'
+                : isDark ? 'bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700' : 'bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700'
             }`}
           >
             {isRunningCode ? (
@@ -177,8 +180,8 @@ export default function EditorToolbar({
             disabled={isGettingReview}
             className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${
               isGettingReview
-                ? 'bg-purple-900/20 text-purple-300 cursor-not-allowed'
-                : 'bg-purple-500 text-white hover:bg-purple-600 active:bg-purple-700'
+                ? isDark ? 'bg-purple-900/20 text-purple-300 cursor-not-allowed' : 'bg-purple-100 text-purple-400 cursor-not-allowed'
+                : isDark ? 'bg-purple-500 text-white hover:bg-purple-600 active:bg-purple-700' : 'bg-purple-500 text-white hover:bg-purple-600 active:bg-purple-700'
             }`}
           >
             {isGettingReview ? (
@@ -198,13 +201,13 @@ export default function EditorToolbar({
           </button>
         </div>
 
-        <div className="flex items-center bg-gray-700 rounded-lg shadow-sm border border-gray-600">
+        <div className={`flex items-center ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-200 border-gray-300'} rounded-lg shadow-sm border`}>
           <button
             onClick={() => onTabChange("editor")}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm ${
               activeTab === "editor"
-                ? 'bg-indigo-900/30 text-indigo-300 font-medium'
-                : 'text-gray-300 hover:text-gray-100 hover:bg-gray-600'
+                ? isDark ? 'bg-indigo-900/30 text-indigo-300 font-medium' : 'bg-indigo-100 text-indigo-700 font-medium'
+                : isDark ? 'text-gray-300 hover:text-gray-100 hover:bg-gray-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300'
             }`}
           >
             <FiCode className="w-4 h-4" />
@@ -215,8 +218,8 @@ export default function EditorToolbar({
             onClick={() => onTabChange("output")}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm transition-colors ${
               activeTab === "output"
-                ? 'bg-indigo-900/30 text-indigo-300 font-medium'
-                : 'text-gray-300 hover:text-gray-100 hover:bg-gray-600'
+                ? isDark ? 'bg-indigo-900/30 text-indigo-300 font-medium' : 'bg-indigo-100 text-indigo-700 font-medium'
+                : isDark ? 'text-gray-300 hover:text-gray-100 hover:bg-gray-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300'
             } relative`}
           >
             <FiPlay className="w-4 h-4" />
@@ -230,8 +233,8 @@ export default function EditorToolbar({
             onClick={() => onTabChange("review")}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm transition-colors ${
               activeTab === "review"
-                ? 'bg-indigo-900/30 text-indigo-300 font-medium'
-                : 'text-gray-300 hover:text-gray-100 hover:bg-gray-600'
+                ? isDark ? 'bg-indigo-900/30 text-indigo-300 font-medium' : 'bg-indigo-100 text-indigo-700 font-medium'
+                : isDark ? 'text-gray-300 hover:text-gray-100 hover:bg-gray-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-300'
             } relative`}
           >
             <FiCpu className="w-4 h-4" />
@@ -250,14 +253,14 @@ export default function EditorToolbar({
         message={
           <div className="space-y-3">
             <div className="flex items-center mb-4">
-              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
-                <FiTrash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+              <div className={`w-10 h-10 rounded-full ${isDark ? 'bg-red-900/30' : 'bg-red-100'} flex items-center justify-center mr-3`}>
+                <FiTrash2 className={`w-6 h-6 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
               </div>
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">Are you sure you want to clear all code?</p>
+                <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Are you sure you want to clear all code?</p>
               </div>
             </div>
-            <p className="text-gray-600 dark:text-gray-400">This action cannot be undone. All code in the editor will be permanently removed.</p>
+            <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>This action cannot be undone. All code in the editor will be permanently removed.</p>
           </div>
         }
         confirmText="Yes, Clear All Code"

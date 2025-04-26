@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTheme } from "../../ThemeContext";
 
 interface EditorFooterProps {
   activeTab: 'editor' | 'output' | 'review';
@@ -21,18 +22,21 @@ export default function EditorFooter({
   executionTime,
   review
 }: EditorFooterProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
-    <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between h-6 px-4 bg-gray-800 text-xs text-gray-400 border-t border-gray-700">
-      <div className="flex items-center divide-x divide-gray-700">
+    <div className={`absolute bottom-0 left-0 right-0 flex items-center justify-between h-6 px-4 ${isDark ? 'bg-gray-800 text-gray-400 border-gray-700' : 'bg-gray-200 text-gray-600 border-gray-300'} text-xs border-t`}>
+      <div className={`flex items-center ${isDark ? 'divide-gray-700' : 'divide-gray-300'} divide-x`}>
         {activeTab === 'editor' && (
           <>
-            <div className="pr-4 text-gray-400">
+            <div className="pr-4">
               Ln {cursorPosition?.line || 1}, Col {cursorPosition?.column || 1}
             </div>
-            <div className="px-4 text-gray-400">{wordCount || 0} words</div>
-            <div className="px-4 font-medium text-gray-300">{language}</div>
+            <div className="px-4">{wordCount || 0} words</div>
+            <div className={`px-4 font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{language}</div>
             {lastSaved && (
-              <div className="pl-4 text-gray-400">
+              <div className="pl-4">
                 Last saved: {lastSaved.toLocaleTimeString()}
               </div>
             )}
@@ -41,12 +45,12 @@ export default function EditorFooter({
         
         {activeTab === 'output' && executionTimestamp && (
           <>
-            <div className="pr-4 text-gray-400">{language}</div>
-            <div className="px-4 text-gray-400">
+            <div className="pr-4">{language}</div>
+            <div className="px-4">
               Executed: {executionTimestamp.toLocaleTimeString()}
             </div>
             {executionTime && (
-              <div className="pl-4 text-gray-400">
+              <div className="pl-4">
                 Duration: {executionTime}ms
               </div>
             )}
@@ -55,30 +59,30 @@ export default function EditorFooter({
         
         {activeTab === 'review' && review && (
           <>
-            <div className="pr-4 text-gray-400">
+            <div className="pr-4">
               Issues: {review.issues.length}
             </div>
-            <div className="px-4 text-gray-400">
+            <div className="px-4">
               Suggestions: {review.suggestions.length}
             </div>
-            <div className="px-4 text-gray-400">
+            <div className="px-4">
               Improvements: {review.improvements.length}
             </div>
             {review.issues.length > 0 && (
               <div className="pl-4 flex items-center gap-2">
-                <span className="text-gray-400">Severity:</span>
+                <span>Severity:</span>
                 {review.issues.some((i: any) => i.severity === 'high') && (
-                  <span className="px-1.5 py-0.5 bg-red-900/30 text-red-300 rounded text-[10px] font-medium">
+                  <span className={`px-1.5 py-0.5 ${isDark ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-700'} rounded text-[10px] font-medium`}>
                     High
                   </span>
                 )}
                 {review.issues.some((i: any) => i.severity === 'medium') && (
-                  <span className="px-1.5 py-0.5 bg-yellow-900/30 text-yellow-300 rounded text-[10px] font-medium">
+                  <span className={`px-1.5 py-0.5 ${isDark ? 'bg-yellow-900/30 text-yellow-300' : 'bg-yellow-100 text-yellow-700'} rounded text-[10px] font-medium`}>
                     Medium
                   </span>
                 )}
                 {review.issues.some((i: any) => i.severity === 'low') && (
-                  <span className="px-1.5 py-0.5 bg-blue-900/30 text-blue-300 rounded text-[10px] font-medium">
+                  <span className={`px-1.5 py-0.5 ${isDark ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-700'} rounded text-[10px] font-medium`}>
                     Low
                   </span>
                 )}
@@ -88,7 +92,7 @@ export default function EditorFooter({
         )}
       </div>
       
-      <div className="flex items-center space-x-4 text-gray-400">
+      <div className="flex items-center space-x-4">
         {activeTab === 'review' && review?._metadata ? (
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">

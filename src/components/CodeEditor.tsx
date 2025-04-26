@@ -623,9 +623,21 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
                 <div className="absolute inset-0">
                   <Editor
                     height="100%"
-                    language={room.language}
+                    defaultLanguage={room.language || "javascript"}
+                    language={room.language || "javascript"}
                     value={localCode}
                     onChange={handleEditorChange}
+                    theme={theme === 'dark' ? 'vs-dark' : 'light'}
+                    options={{
+                      wordWrap: 'on',
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      fontFamily: 'Fira Code, Menlo, Monaco, Consolas, "Courier New", monospace',
+                      tabSize: 2,
+                      automaticLayout: true,
+                      scrollBeyondLastLine: false,
+                      padding: { top: 16 },
+                    }}
                     onMount={(editor, monaco) => {
                       // Store editor reference
                       editorRef.current = editor;
@@ -650,10 +662,6 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
                           column: position.column
                         });
                       }
-                    }}
-                    options={{
-                      ...editorOptions,
-                      theme: theme === 'dark' ? "vs-dark" : "vs-light",
                     }}
                   />
                 </div>
