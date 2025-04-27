@@ -20,6 +20,7 @@ import {
 import { FaJava } from "react-icons/fa";
 import { FiCode, FiUsers, FiPlus, FiHash, FiClock, FiEdit, FiEye, FiActivity, FiCalendar } from "react-icons/fi";
 import { getSupportedLanguages, getLanguageDisplayName } from "../../convex/languageMap";
+import LogoIcon from "./ui/LogoIcon";
 
 // Popular programming languages for quick selection
 const POPULAR_LANGUAGES = [
@@ -668,11 +669,7 @@ export default function WorkspaceHub() {
           
           <div className={`text-center mb-6 md:mb-10 transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
             <div className="flex items-center justify-center mb-4 md:mb-6">
-              <img 
-                src="/apple-touch-icon.png" 
-                alt="Lumenly Logo" 
-                className="w-16 h-16 md:w-20 md:h-20 mb-2 hover-float"
-              />
+              <LogoIcon size={80} />
             </div>
             
             <h1 className="text-2xl md:text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-2 md:mb-3 transition-colors relative">
