@@ -156,7 +156,8 @@ export default function AppContent() {
                   
                   {/* Tagline with refined typography */}
                   <p className="text-base sm:text-lg md:text-xl text-gray-600/90 dark:text-gray-300/90 font-light transition-colors tracking-wide">
-                    Code together, <span className="inline-block italic font-normal bg-gradient-to-br from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">instantly with AI</span>
+                  Code together, <span className="inline-block italic font-normal bg-gradient-to-br from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">instantly with AI</span> <br />
+                  <span className="text-lg text-gray-500 dark:text-gray-400">BROWSER-NATIVE COLLABORATIVE AI IDE</span>
                   </p>
                 </div>
                 
