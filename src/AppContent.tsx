@@ -118,8 +118,8 @@ export default function AppContent() {
           <Authenticated>
             <Routes>
               <Route path="/" element={<Navigate to="/workspace" replace />} />
-              <Route path="/workspace" element={<div className="w-full h-full"><CodeRoom /></div>} />
-              <Route path="/workspace/:roomCode" element={<div className="w-full h-full"><RoomRouteHandler /></div>} />
+              <Route path="/workspace" element={<div className="w-full h-full bg-gray-50 dark:bg-gray-900"><CodeRoom /></div>} />
+              <Route path="/workspace/:roomCode" element={<div className="w-full h-full bg-gray-50 dark:bg-gray-900"><RoomRouteHandler /></div>} />
               <Route path="*" element={<Navigate to="/workspace" replace />} />
             </Routes>
           </Authenticated>

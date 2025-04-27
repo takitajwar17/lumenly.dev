@@ -7,6 +7,11 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      colors: {
+        gray: {
+          850: '#1a1c2a',
+        },
+      },
       animation: {
         'spin-reverse': 'spin-reverse 1s linear infinite',
       },
