@@ -343,7 +343,7 @@ export default function CodeRoom() {
         
         {/* Right side - Recent Rooms */}
         <div className="w-full md:w-1/2 p-4 md:p-8 bg-gray-50 dark:bg-gray-900/30 transition-colors overflow-auto flex flex-col items-center">
-          <div className="w-full max-w-md">
+          <div className="w-full max-w-md lg:max-w-[80%] xl:max-w-[80%]">
             <h2 className={`text-lg md:text-xl font-semibold mb-4 md:mb-5 text-gray-900 dark:text-white transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} flex items-center`}>
               <div className="mr-2 w-6 h-6 md:w-7 md:h-7 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
                 <FiCode className="text-gray-500 dark:text-gray-400" />
