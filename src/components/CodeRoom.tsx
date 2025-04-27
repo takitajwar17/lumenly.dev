@@ -133,7 +133,7 @@ export default function CodeRoom() {
     <div className="w-full h-full flex flex-col overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors bg-noise">
       {/* Create Room Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className={`bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 transform ${mounted ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-4 opacity-0 scale-95'}`}>
             <div className="relative mb-6">
               <div className="absolute inset-0 -z-10 bg-gradient-radial from-indigo-100/50 to-transparent dark:from-indigo-900/20 dark:to-transparent opacity-70 blur-xl rounded-xl"></div>
@@ -169,7 +169,7 @@ export default function CodeRoom() {
                 
                 {!showAllLanguages ? (
                   <>
-                    <div className="grid grid-cols-4 gap-2 mb-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-3">
                       {POPULAR_LANGUAGES.map(lang => {
                         const IconComponent = lang.icon;
                         return (
@@ -245,19 +245,19 @@ export default function CodeRoom() {
         </div>
       )}
     
-      <div className="flex h-full w-full">
+      <div className="flex flex-col md:flex-row h-full w-full overflow-auto">
         {/* Left side - Create/Join */}
-        <div className="w-1/2 p-8 flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-colors relative">
+        <div className="w-full md:w-1/2 p-4 md:p-8 flex flex-col bg-white dark:bg-gray-900 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-800 transition-colors relative">
           {/* Background decorative elements */}
           <div className="absolute inset-0 -z-10 bg-gradient-radial from-indigo-100/30 to-transparent dark:from-indigo-900/10 dark:to-transparent opacity-70 pointer-events-none"></div>
           <div className="absolute inset-0 -z-20 bg-gradient-to-b from-purple-100/10 via-transparent to-indigo-100/10 dark:from-purple-900/10 dark:via-transparent dark:to-indigo-900/10 blur-2xl pointer-events-none"></div>
           
-          <div className={`text-center mb-10 transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-20 h-20 relative subtle-rotation">
+          <div className={`text-center mb-6 md:mb-10 transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+            <div className="flex items-center justify-center mb-4 md:mb-6">
+              <div className="w-16 h-16 md:w-20 md:h-20 relative subtle-rotation">
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-500 dark:from-indigo-400 dark:to-purple-400 rounded-full blur-md opacity-20"></div>
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-500 dark:from-indigo-400 dark:to-purple-400 rounded-full overflow-hidden border border-indigo-200 dark:border-indigo-700/50 flex items-center justify-center shadow-lg hover-float">
-                  <FiCode className="w-8 h-8 text-white" />
+                  <FiCode className="w-6 h-6 md:w-8 md:h-8 text-white" />
                 </div>
                 {/* Floating dots decoration */}
                 <div className="absolute w-2 h-2 rounded-full bg-indigo-400 dark:bg-indigo-300 floating-dot" style={{ top: '-4px', right: '2px' }}></div>
@@ -265,7 +265,7 @@ export default function CodeRoom() {
               </div>
             </div>
             
-            <h1 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-3 transition-colors relative">
+            <h1 className="text-2xl md:text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-2 md:mb-3 transition-colors relative">
               <span className="relative">
                 <span className="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-300 bg-clip-text text-transparent">Collaborative Coding</span>
                 <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-300 bg-clip-text text-transparent blur-[2px] opacity-30 -z-10 translate-y-[1px] translate-x-[0.5px]">Collaborative Coding</span>
@@ -273,23 +273,23 @@ export default function CodeRoom() {
             </h1>
             
             {/* Ornamental divider with animation */}
-            <div className="relative h-px w-32 mx-auto my-4 overflow-hidden">
+            <div className="relative h-px w-32 mx-auto my-3 md:my-4 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500/70 dark:via-indigo-400/70 to-transparent"></div>
               <div className="absolute inset-0 logo-shimmer"></div>
             </div>
             
-            <p className="text-gray-600 dark:text-gray-400 transition-colors">
+            <p className="text-gray-600 dark:text-gray-400 transition-colors text-sm md:text-base">
               Create or join a room to start coding <span className="inline-block italic font-normal bg-gradient-to-br from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">together</span>
             </p>
           </div>
           
-          <div className={`space-y-8 flex-1 flex flex-col justify-center max-w-md mx-auto w-full transition-all duration-700 delay-300 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+          <div className={`space-y-6 md:space-y-8 flex-1 flex flex-col justify-center max-w-md mx-auto w-full transition-all duration-700 delay-300 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
             <button
               onClick={handleCreateRoomClick}
-              className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 dark:from-indigo-500 dark:to-purple-500 dark:hover:from-indigo-400 dark:hover:to-purple-400 text-white rounded-xl px-5 py-4 text-lg font-medium transition-all duration-300 shadow-md hover:shadow-xl hover:scale-[1.02] flex items-center justify-center"
+              className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 dark:from-indigo-500 dark:to-purple-500 dark:hover:from-indigo-400 dark:hover:to-purple-400 text-white rounded-xl px-4 py-3 md:px-5 md:py-4 text-base md:text-lg font-medium transition-all duration-300 shadow-md hover:shadow-xl hover:scale-[1.02] flex items-center justify-center"
             >
               <div className="flex items-center">
-                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center mr-3">
+                <div className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-white/20 flex items-center justify-center mr-2 md:mr-3">
                   <FiPlus className="text-white" />
                 </div>
                 <span>Create a Room</span>
@@ -307,9 +307,9 @@ export default function CodeRoom() {
             
             <div className="space-y-3">
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500/10 to-indigo-500/10 dark:from-green-400/20 dark:to-indigo-400/20 flex items-center justify-center">
-                    <FiHash className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                <div className="absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none">
+                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-green-500/10 to-indigo-500/10 dark:from-green-400/20 dark:to-indigo-400/20 flex items-center justify-center">
+                    <FiHash className="h-4 w-4 md:h-5 md:w-5 text-gray-500 dark:text-gray-400" />
                   </div>
                 </div>
                 <input
@@ -317,18 +317,18 @@ export default function CodeRoom() {
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
                   placeholder="Enter 6-character room code"
-                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-xl pl-14 pr-4 py-3.5 text-center text-lg tracking-widest uppercase text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-colors shadow-sm"
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-xl pl-12 md:pl-14 pr-4 py-3 md:py-3.5 text-center text-base md:text-lg tracking-widest uppercase text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-colors shadow-sm"
                   maxLength={6}
                 />
                 <div className="absolute inset-0 -z-10 rounded-xl opacity-0 transition-opacity duration-300 bg-gradient-to-r from-green-500/50 to-indigo-500/50 blur-lg group-focus-within:opacity-70"></div>
               </div>
               <button
                 onClick={() => void handleJoinRoom()}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 dark:from-green-500 dark:to-emerald-500 dark:hover:from-green-400 dark:hover:to-emerald-400 text-white rounded-xl px-4 py-3.5 text-lg font-medium transition-all duration-300 shadow-md hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center"
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 dark:from-green-500 dark:to-emerald-500 dark:hover:from-green-400 dark:hover:to-emerald-400 text-white rounded-xl px-4 py-3 md:py-3.5 text-base md:text-lg font-medium transition-all duration-300 shadow-md hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center"
                 disabled={joinCode.length !== 6 || isLoading}
               >
                 <div className="flex items-center">
-                  <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center mr-3">
+                  <div className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-white/20 flex items-center justify-center mr-2 md:mr-3">
                     <FiUsers className="text-white" />
                   </div>
                   <span>{isLoading ? 'Joining...' : 'Join Room'}</span>
@@ -339,17 +339,17 @@ export default function CodeRoom() {
         </div>
         
         {/* Right side - Recent Rooms */}
-        <div className="w-1/2 p-8 bg-gray-50 dark:bg-gray-900/30 transition-colors">
-          <h2 className={`text-xl font-semibold mb-5 text-gray-900 dark:text-white transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} flex items-center`}>
-            <div className="mr-2 w-7 h-7 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
+        <div className="w-full md:w-1/2 p-4 md:p-8 bg-gray-50 dark:bg-gray-900/30 transition-colors overflow-auto">
+          <h2 className={`text-lg md:text-xl font-semibold mb-4 md:mb-5 text-gray-900 dark:text-white transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} flex items-center`}>
+            <div className="mr-2 w-6 h-6 md:w-7 md:h-7 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
               <FiCode className="text-gray-500 dark:text-gray-400" />
             </div>
             Your Recent Rooms
           </h2>
           
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="relative w-16 h-16">
+            <div className="flex items-center justify-center h-48 md:h-64">
+              <div className="relative w-12 h-12 md:w-16 md:h-16">
                 <div className="absolute inset-0 rounded-full border-t-2 border-b-2 border-indigo-500 animate-spin"></div>
                 <div className="absolute inset-2 rounded-full border-t-2 border-b-2 border-indigo-400 animate-spin-reverse" style={{ animationDuration: '1.5s' }}></div>
                 <div className="absolute inset-4 rounded-full border-t-2 border-indigo-300 animate-spin" style={{ animationDuration: '2s' }}></div>
@@ -357,7 +357,7 @@ export default function CodeRoom() {
               </div>
             </div>
           ) : rooms && rooms.length > 0 ? (
-            <div className={`space-y-3 overflow-auto max-h-[500px] pr-2 pb-4 transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+            <div className={`space-y-3 overflow-auto max-h-[calc(100vh-160px)] md:max-h-[500px] pr-2 pb-4 transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
               {rooms.map((room, index) => {
                 // Find the language icon if available
                 const language = POPULAR_LANGUAGES.find(lang => lang.id === room.language);
@@ -367,7 +367,7 @@ export default function CodeRoom() {
                   <button
                     key={room._id}
                     onClick={() => void handleSelectRoom(room.code)}
-                    className="w-full text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-200 dark:hover:border-indigo-700 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] flex justify-between items-center"
+                    className="w-full text-left p-3 md:p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-200 dark:hover:border-indigo-700 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] flex justify-between items-center"
                     style={{ 
                       transitionDelay: `${50 * (index % 10)}ms`,
                       opacity: mounted ? 1 : 0,
@@ -376,41 +376,41 @@ export default function CodeRoom() {
                   >
                     <div className="flex items-center">
                       {IconComponent ? (
-                        <div className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-lg mr-3 border border-gray-200 dark:border-gray-700 shadow-sm">
-                          <IconComponent size={24} color={language.color} />
+                        <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-lg mr-2 md:mr-3 border border-gray-200 dark:border-gray-700 shadow-sm">
+                          <IconComponent size={20} className="md:text-2xl" color={language.color} />
                         </div>
                       ) : (
-                        <div className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-lg mr-3 border border-gray-200 dark:border-gray-700 shadow-sm">
-                          <FiCode size={20} className="text-gray-500 dark:text-gray-400" />
+                        <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-lg mr-2 md:mr-3 border border-gray-200 dark:border-gray-700 shadow-sm">
+                          <FiCode size={18} className="md:text-xl text-gray-500 dark:text-gray-400" />
                         </div>
                       )}
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white transition-colors">{room.name}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors">
+                        <p className="font-medium text-gray-900 dark:text-white transition-colors text-sm md:text-base">{room.name}</p>
+                        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 transition-colors">
                           {getLanguageDisplayName(room.language)}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center">
-                      <span className="text-xs font-medium bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 text-indigo-600 dark:text-indigo-400 py-1.5 px-3 rounded-full transition-colors">
+                    <div className="flex flex-col md:flex-row items-end md:items-center">
+                      <span className="text-xs font-medium bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 text-indigo-600 dark:text-indigo-400 py-1 px-2 md:py-1.5 md:px-3 rounded-full transition-colors">
                         {room.code}
                       </span>
-                      <span className="ml-3 text-indigo-600 dark:text-indigo-400 text-sm font-medium transition-colors group-hover:ml-4">Open →</span>
+                      <span className="mt-1 md:mt-0 md:ml-3 text-indigo-600 dark:text-indigo-400 text-xs md:text-sm font-medium transition-colors group-hover:ml-4 hidden md:inline-block">Open →</span>
                     </div>
                   </button>
                 );
               })}
             </div>
           ) : (
-            <div className={`text-center py-16 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-              <div className="relative w-20 h-20 mx-auto mb-4">
+            <div className={`text-center py-10 md:py-16 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+              <div className="relative w-16 h-16 md:w-20 md:h-20 mx-auto mb-3 md:mb-4">
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-full blur-md opacity-70"></div>
                 <div className="absolute inset-0 flex items-center justify-center border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-full shadow-sm">
-                  <FiCode className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                  <FiCode className="w-6 h-6 md:w-8 md:h-8 text-gray-400 dark:text-gray-500" />
                 </div>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 transition-colors font-medium">No recent rooms found</p>
-              <p className="text-sm mt-2 text-gray-500 dark:text-gray-500 transition-colors">Create a new room to get started</p>
+              <p className="text-gray-600 dark:text-gray-400 transition-colors font-medium text-sm md:text-base">No recent rooms found</p>
+              <p className="text-xs md:text-sm mt-2 text-gray-500 dark:text-gray-500 transition-colors">Create a new room to get started</p>
             </div>
           )}
         </div>
