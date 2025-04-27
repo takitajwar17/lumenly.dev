@@ -10,7 +10,6 @@ import {
   FiCpu,
 } from "react-icons/fi";
 import { IconType } from "react-icons";
-import { useTheme } from "./ThemeContext";
 
 export interface ReviewItem {
   title: string;
@@ -122,7 +121,6 @@ const ReviewSection = ({ title, items, icon: Icon, isExpanded, onToggle }: Revie
 
 const AIReviewPanel = ({ review }: AIReviewPanelProps) => {
   const [expandedSection, setExpandedSection] = useState<string | null>("issues");
-  const { theme } = useTheme();
 
   if (!review || typeof review !== "object") {
     return (

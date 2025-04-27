@@ -1,0 +1,24 @@
+{
+  "name": "Lumenly",
+  "short_name": "Lumenly",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#885df4",
+  "background_color": "#ffffff",
+  "display": "standalone"
+} 

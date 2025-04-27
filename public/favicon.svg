@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <!-- Background circle with gradient -->
+  <circle cx="32" cy="32" r="32" fill="url(#paint0_linear)"/>
+  
+  <!-- Stylized "L" shape for Lumenly -->
+  <path d="M20 18.5V44.5H44" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Highlight dot -->
+  <circle cx="44" cy="20" r="5" fill="white" opacity="0.8"/>
+  
+  <!-- Define gradient -->
+  <defs>
+    <linearGradient id="paint0_linear" x1="64" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#885df4"/>
+      <stop offset="1" stop-color="#6644c4"/>
+    </linearGradient>
+  </defs>
+</svg> 

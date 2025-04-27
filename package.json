@@ -7,7 +7,8 @@
     "dev": "convex dev --once && node setup.mjs && npm-run-all --parallel dev:frontend dev:backend",
     "dev:frontend": "vite --open",
     "dev:backend": "convex dev",
-    "lint": "tsc -p convex -noEmit --pretty false && tsc -p . -noEmit --pretty false && convex dev --once && vite build"
+    "lint": "tsc -p convex -noEmit --pretty false && tsc -p . -noEmit --pretty false && convex dev --once && vite build",
+    "generate-favicons": "node -e \"const fs=require('fs');const path=require('path');const sharp=require('sharp');const svgPath=path.join(__dirname,'public/favicon.svg');const svgBuffer=fs.readFileSync(svgPath);(async()=>{try{await sharp(svgBuffer).resize(32,32).png().toFile(path.join(__dirname,'public/favicon-32x32.png'));await sharp(svgBuffer).resize(180,180).png().toFile(path.join(__dirname,'public/apple-touch-icon.png'));await sharp(svgBuffer).resize(192,192).png().toFile(path.join(__dirname,'public/android-chrome-192x192.png'));await sharp(svgBuffer).resize(512,512).png().toFile(path.join(__dirname,'public/android-chrome-512x512.png'));const icoBuffer = await sharp(svgBuffer).resize(32,32).png().toBuffer();fs.writeFileSync(path.join(__dirname,'public/favicon.ico'),icoBuffer);console.log('All favicons generated!')}catch(e){console.error(e)}})();\""
   },
   "dependencies": {
     "@auth/core": "^0.37.4",
@@ -43,6 +44,8 @@
     "npm-run-all": "^4.1.5",
     "postcss": "~8",
     "prettier": "^3.5.3",
+    "sharp": "^0.34.1",
+    "svg2ico": "^1.0.35",
     "tailwindcss": "~3",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
