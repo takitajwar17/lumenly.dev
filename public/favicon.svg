@@ -1,18 +1,70 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
-  <!-- Background circle with gradient -->
-  <circle cx="32" cy="32" r="32" fill="url(#paint0_linear)"/>
+  <!-- Base shadow for 3D effect -->
+  <ellipse cx="32" cy="36" rx="28" ry="26" fill="rgba(0,0,0,0.25)" filter="blur(3px)"/>
+  
+  <!-- Main background circle with gradient -->
+  <circle cx="32" cy="32" r="32" fill="url(#background_gradient)"/>
+  
+  <!-- Inner radial gradient for 3D sphere effect -->
+  <circle cx="32" cy="32" r="32" fill="url(#sphere_gradient)" opacity="1"/>
+  
+  <!-- Top highlight for 3D sphere effect -->
+  <circle cx="26" cy="22" r="20" fill="url(#highlight_gradient)" opacity="0.4"/>
+  
+  <!-- Bottom shadow for 3D sphere effect -->
+  <circle cx="38" cy="42" r="20" fill="url(#shadow_gradient)" opacity="0.4"/>
+  
+  <!-- Edge highlight for 3D effect -->
+  <path d="M32 0C14.3 0 0 14.3 0 32" stroke="white" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+  
+  <!-- Stylized "L" shape shadow for depth effect -->
+  <path d="M22 20.5V46.5H46" stroke="#5b5eb8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
   
   <!-- Stylized "L" shape for Lumenly -->
   <path d="M20 18.5V44.5H44" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
   
-  <!-- Highlight dot -->
-  <circle cx="44" cy="20" r="5" fill="white" opacity="0.8"/>
+  <!-- Glowing dot with animation -->
+  <circle cx="44" cy="20" r="5" fill="white" opacity="0.8">
+    <animate attributeName="opacity" values="0.5;0.9;0.5" dur="3s" repeatCount="indefinite" />
+  </circle>
   
-  <!-- Define gradient -->
+  <!-- Outer glow for the dot -->
+  <circle cx="44" cy="20" r="7" fill="white" opacity="0.4">
+    <animate attributeName="r" values="6;8;6" dur="3s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="0.2;0.4;0.2" dur="3s" repeatCount="indefinite" />
+  </circle>
+  
+  <!-- Extra outer glow for the dot -->
+  <circle cx="44" cy="20" r="10" fill="white" opacity="0.2">
+    <animate attributeName="r" values="9;12;9" dur="3s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="0.1;0.2;0.1" dur="3s" repeatCount="indefinite" />
+  </circle>
+  
+  <!-- Define gradients -->
   <defs>
-    <linearGradient id="paint0_linear" x1="64" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#858af8"/>
+    <!-- Main background gradient -->
+    <linearGradient id="background_gradient" x1="64" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9a9dff"/>
       <stop offset="1" stop-color="#6d72e6"/>
     </linearGradient>
+    
+    <!-- Sphere gradient for 3D effect -->
+    <radialGradient id="sphere_gradient" cx="0.4" cy="0.4" r="0.8" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#a5a7ff" stop-opacity="0.7"/>
+      <stop offset="0.6" stop-color="#858af8" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#6d72e6" stop-opacity="0"/>
+    </radialGradient>
+    
+    <!-- Top highlight gradient -->
+    <radialGradient id="highlight_gradient" cx="0.5" cy="0.5" r="0.5" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="white" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+    
+    <!-- Bottom shadow gradient -->
+    <radialGradient id="shadow_gradient" cx="0.5" cy="0.5" r="0.5" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#464791" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#464791" stop-opacity="0"/>
+    </radialGradient>
   </defs>
 </svg> 
