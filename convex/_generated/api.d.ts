@@ -24,6 +24,7 @@ import type * as piston from "../piston.js";
 import type * as presence from "../presence.js";
 import type * as rooms from "../rooms.js";
 import type * as scheduled from "../scheduled.js";
+import type * as userActivity from "../userActivity.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   presence: typeof presence;
   rooms: typeof rooms;
   scheduled: typeof scheduled;
+  userActivity: typeof userActivity;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
