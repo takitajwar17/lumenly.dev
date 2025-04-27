@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiUsers } from 'react-icons/fi';
+import { FiUsers, FiX } from 'react-icons/fi';
 import { getUserActivityStatus, getActivityDisplay, getActivityDetails } from '../activity/ActivityStatus';
 
 interface CollaboratorsPanelProps {
@@ -11,16 +11,20 @@ interface CollaboratorsPanelProps {
     message?: string;
   }>;
   onClearActivityLog: () => void;
+  onClose?: () => void;
+  isDrawer?: boolean;
 }
 
 export default function CollaboratorsPanel({ 
   presence, 
   activityLog, 
-  onClearActivityLog 
+  onClearActivityLog,
+  onClose,
+  isDrawer = false
 }: CollaboratorsPanelProps) {
   return (
-    <div className="w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-colors">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 transition-colors">
+    <div className={`h-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-colors ${isDrawer ? 'w-full' : 'w-64'}`}>
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 transition-colors flex justify-between items-center">
         <h3 className="font-semibold text-gray-900 dark:text-white transition-colors flex items-center">
           <FiUsers className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
           Collaborators
@@ -30,6 +34,14 @@ export default function CollaboratorsPanel({
             </span>
           )}
         </h3>
+        {isDrawer && onClose && (
+          <button 
+            onClick={onClose}
+            className="p-1 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <FiX className="w-5 h-5" />
+          </button>
+        )}
       </div>
       <div className="flex-1 overflow-auto p-4">
         {presence && presence.length > 0 ? (
@@ -47,7 +59,7 @@ export default function CollaboratorsPanel({
                       : 'bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700'
                   } transition-colors`}
                 >
-                  <div className="relative">
+                  <div className="relative flex-shrink-0">
                     <div 
                       className="w-8 h-8 rounded-full flex items-center justify-center transition-colors" 
                       style={{ 
@@ -88,7 +100,7 @@ export default function CollaboratorsPanel({
                         {activityDisplay.text}
                       </span>
                       
-                      <span className="ml-2 text-gray-400 dark:text-gray-500">
+                      <span className="ml-2 text-gray-400 dark:text-gray-500 truncate">
                         {getActivityDetails(user)}
                       </span>
                     </div>

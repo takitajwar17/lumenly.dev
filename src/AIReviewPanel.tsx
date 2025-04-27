@@ -47,16 +47,16 @@ const ReviewSection = ({ title, items, icon: Icon, isExpanded, onToggle }: Revie
     <div className="mb-4">
       <button
         onClick={onToggle}
-        className={`flex items-center w-full px-4 py-3 text-sm font-medium text-left transition-colors duration-200 rounded-lg ${
+        className={`flex items-center w-full px-3 sm:px-4 py-3 text-sm font-medium text-left transition-colors duration-200 rounded-lg ${
           isExpanded 
             ? 'bg-indigo-50 dark:bg-gray-700 text-indigo-700 dark:text-gray-100' 
             : 'bg-white dark:bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
         }`}
       >
-        <Icon className={`w-4 h-4 mr-3 ${isExpanded ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`} />
-        <span className="flex-1">{title}</span>
+        <Icon className={`w-4 h-4 mr-2 sm:mr-3 ${isExpanded ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`} />
+        <span className="flex-1 truncate">{title}</span>
         {items.length > 0 && (
-          <span className={`px-2 py-0.5 text-xs rounded-full mr-2 ${
+          <span className={`px-2 py-0.5 text-xs rounded-full ml-1 mr-2 ${
             isExpanded ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300' : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
           }`}>
             {items.length}
@@ -74,15 +74,15 @@ const ReviewSection = ({ title, items, icon: Icon, isExpanded, onToggle }: Revie
           {items.map((item, index) => (
             <div
               key={index}
-              className="p-4 bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-600/50 hover:border-indigo-200 dark:hover:border-gray-500/50 transition-colors shadow-sm"
+              className="p-3 sm:p-4 bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-600/50 hover:border-indigo-200 dark:hover:border-gray-500/50 transition-colors shadow-sm"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                 <h3 className="text-sm font-medium text-gray-800 dark:text-gray-100 leading-tight">
                   {item.title}
                 </h3>
                 {item.severity && (
                   <span
-                    className={`px-2 py-0.5 text-xs rounded-full font-medium ${
+                    className={`self-start px-2 py-0.5 text-xs rounded-full font-medium ${
                       item.severity === "high"
                         ? "bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-500/30"
                         : item.severity === "medium"
@@ -101,7 +101,7 @@ const ReviewSection = ({ title, items, icon: Icon, isExpanded, onToggle }: Revie
                 <div className="mt-3">
                   <div className="relative">
                     <pre className="p-3 bg-gray-50 dark:bg-black/30 rounded-lg overflow-x-auto border border-gray-200 dark:border-gray-700">
-                      <code className="text-sm text-gray-800 dark:text-gray-200 font-mono">{item.code}</code>
+                      <code className="text-xs sm:text-sm text-gray-800 dark:text-gray-200 font-mono">{item.code}</code>
                     </pre>
                     {item.lineNumber && (
                       <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 text-xs bg-white/90 dark:bg-black/50 rounded-full text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
@@ -145,8 +145,8 @@ const AIReviewPanel = ({ review }: AIReviewPanelProps) => {
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors">
       {/* Header */}
-      <div className="flex-none px-6 py-4 bg-white dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800/50 transition-colors">
-        <div className="flex items-center justify-between">
+      <div className="flex-none px-4 sm:px-6 py-4 bg-white dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800/50 transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <h2 className="text-lg font-medium text-gray-800 dark:text-gray-100 transition-colors">AI Code Review</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">
@@ -154,10 +154,10 @@ const AIReviewPanel = ({ review }: AIReviewPanelProps) => {
             </p>
           </div>
           {review._metadata && (
-            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 transition-colors">
+            <div className="flex items-center gap-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400 transition-colors">
               <div className="flex items-center gap-2">
                 <FiCpu className="w-4 h-4" />
-                <span>{review._metadata.model}</span>
+                <span className="truncate">{review._metadata.model}</span>
               </div>
               <div className="flex items-center gap-2">
                 <FiClock className="w-4 h-4" />

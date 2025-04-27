@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { useTheme } from "../ThemeContext";
 import { toast } from "sonner";
 import Editor from "@monaco-editor/react";
-import { FiChevronLeft } from "react-icons/fi";
+import { FiChevronLeft, FiCopy, FiX } from "react-icons/fi";
 import FileUploadButton from "../FileUploadButton";
 import AIReviewPanel, { AIReview } from "../AIReviewPanel";
 import CollaboratorsPanel from "./collaboration/CollaboratorsPanel";
@@ -38,8 +38,13 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
   const [isUpdatingLanguage, setIsUpdatingLanguage] = useState(false);
   const [lastTypingTime, setLastTypingTime] = useState<number>(0);
   const [typingTimeoutId, setTypingTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [isMobileView, setIsMobileView] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [showMobileCollaborators, setShowMobileCollaborators] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
   
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme } = useTheme();
   const rooms = useQuery(api.rooms.list);
   const workspace = useQuery(
@@ -208,6 +213,38 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
       }, 100), // 100ms debounce delay for cursor
     [selectedRoomId, updatePresence]
   );
+
+  // Check for mobile view
+  useEffect(() => {
+    const checkMobileView = () => {
+      setIsMobileView(window.innerWidth < 768); // Consider screens below 768px as mobile
+    };
+    
+    // Check initially
+    checkMobileView();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkMobileView);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('resize', checkMobileView);
+    };
+  }, []);
+
+  // Function to copy workspace link
+  const copyWorkspaceLink = useCallback(() => {
+    const url = window.location.origin + location.pathname;
+    void navigator.clipboard.writeText(url).then(() => {
+      setIsCopied(true);
+      toast.success("Workspace link copied to clipboard");
+      
+      // Reset copied state after 2 seconds
+      setTimeout(() => {
+        setIsCopied(false);
+      }, 2000);
+    });
+  }, [location.pathname]);
 
   // Update presence tracking effect
   useEffect(() => {
@@ -519,6 +556,22 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     setActivityLog([]);
   }, []);
 
+  const toggleMobileCollaborators = useCallback(() => {
+    setShowMobileCollaborators(prev => !prev);
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    setShowSidebar(prev => !prev);
+  }, []);
+
+  const handleRunCodeWrapper = useCallback(() => {
+    void handleRunCode();
+  }, [handleRunCode]);
+
+  const handleAIAssistWrapper = useCallback(() => {
+    void handleAIAssist();
+  }, [handleAIAssist]);
+
   if (isLoading && !workspace) {
     return (
       <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-900 transition-colors">
@@ -535,10 +588,48 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     );
   }
 
+  // For mobile devices, show a message instead of the full workspace
+  if (isMobileView) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-white dark:bg-gray-900 text-center">
+        <svg className="w-24 h-24 mx-auto mb-6 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Desktop Experience Required</h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+          Our collaborative IDE is optimized for desktop devices. Please open this workspace on a larger screen for the best experience.
+        </p>
+        {workspace && (
+          <div className="mb-6 max-w-xs mx-auto">
+            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-400 mb-2 transition-colors">Workspace Code:</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 px-3 py-2 transition-colors">
+              <p className="text-xl tracking-wider font-mono font-semibold text-indigo-600 dark:text-indigo-400 transition-colors break-all">
+                {workspace.code}
+              </p>
+            </div>
+          </div>
+        )}
+        <button
+          onClick={copyWorkspaceLink}
+          className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 mx-auto"
+        >
+          <span>{isCopied ? "Copied!" : "Copy Workspace Link"}</span>
+          <FiCopy className="w-5 h-5 ml-2" />
+        </button>
+        <button
+          onClick={onBack}
+          className="mt-4 px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 underline transition-colors"
+        >
+          Back to Main Menu
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full h-full flex overflow-hidden bg-white dark:bg-gray-900 transition-colors">
-      {/* Left Sidebar - Workspace List */}
-      <div className="w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-colors">
+    <div className="w-full h-full flex flex-col md:flex-row overflow-hidden bg-white dark:bg-gray-900 transition-colors">
+      {/* Left Sidebar - Workspace List - Hidden below 1200px */}
+      <div className="hidden 2xl:flex w-72 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-col overflow-hidden transition-colors h-full">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 transition-colors">
           <button
             onClick={handleBackWithCleanup}
@@ -554,7 +645,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
             <div className="text-center">
               <p className="text-sm font-medium text-indigo-700 dark:text-indigo-400 mb-1.5 transition-colors">Workspace Code</p>
               <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 px-3 py-2 transition-colors">
-                <p className="text-xl tracking-wider font-mono font-semibold text-indigo-600 dark:text-indigo-400 transition-colors">
+                <p className="text-xl tracking-wider font-mono font-semibold text-indigo-600 dark:text-indigo-400 transition-colors break-all">
                   {workspace.code}
                 </p>
               </div>
@@ -594,6 +685,83 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
         </div>
       </div>
 
+      {/* Floating sidebar for medium screens (md) when toggled */}
+      {showSidebar && (
+        <div className="fixed inset-0 z-40 2xl:hidden">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/30 dark:bg-black/50" 
+            onClick={toggleSidebar}
+          ></div>
+          
+          {/* Sidebar */}
+          <div className="absolute top-0 left-0 bottom-0 w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-colors">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 transition-colors flex justify-between items-center">
+              <button
+                onClick={handleBackWithCleanup}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              >
+                <FiChevronLeft className="w-4 h-4" />
+                <span className="font-medium">Back to Main Menu</span>
+              </button>
+              <button
+                onClick={toggleSidebar}
+                className="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {workspace && (
+              <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/10 border-b border-indigo-100 dark:border-indigo-900/20 transition-colors">
+                <div className="text-center">
+                  <p className="text-sm font-medium text-indigo-700 dark:text-indigo-400 mb-1.5 transition-colors">Workspace Code</p>
+                  <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 px-3 py-2 transition-colors">
+                    <p className="text-xl tracking-wider font-mono font-semibold text-indigo-600 dark:text-indigo-400 transition-colors break-all">
+                      {workspace.code}
+                    </p>
+                  </div>
+                  <p className="text-xs text-indigo-600/70 dark:text-indigo-400/70 mt-2 transition-colors">Share this code with collaborators</p>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex-1 overflow-auto">
+              <div className="p-4">
+                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 transition-colors">Your Past Workspaces</h3>
+                <div className="space-y-2">
+                  {rooms?.map((workspace) => (
+                    <button
+                      key={workspace._id}
+                      onClick={() => {
+                        void handleSelectRoom(workspace.code);
+                        toggleSidebar();
+                      }}
+                      className={`w-full text-left p-3 rounded-lg transition-all ${
+                        selectedRoomId === workspace._id
+                          ? "bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-200 dark:border-indigo-700"
+                          : "hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-gray-200 dark:border-gray-700"
+                      }`}
+                    >
+                      <span className={`block font-medium truncate ${
+                        selectedRoomId === workspace._id ? "text-indigo-700 dark:text-indigo-400" : "text-gray-700 dark:text-gray-300"
+                      } transition-colors`}>
+                        {workspace.name}
+                      </span>
+                      <span className={`block text-xs mt-0.5 ${
+                        selectedRoomId === workspace._id ? "text-indigo-500 dark:text-indigo-300" : "text-gray-500 dark:text-gray-400"
+                      } transition-colors`}>
+                        {workspace.language}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col relative">
         {selectedRoomId && workspace ? (
@@ -606,8 +774,8 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
               isGettingReview={isGettingReview}
               output={output}
               review={review}
-              onRunCode={handleRunCode}
-              onAIAssist={handleAIAssist}
+              onRunCode={handleRunCodeWrapper}
+              onAIAssist={handleAIAssistWrapper}
               onTabChange={setActiveTab}
               onCopyCode={handleCopyCode}
               onClearCode={handleClearCode}
@@ -615,7 +783,24 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
               onLanguageDetected={handleDetectedLanguage}
               isUpdatingLanguage={isUpdatingLanguage}
               presence={presence}
+              onToggleCollaborators={toggleMobileCollaborators}
+              onToggleSidebar={toggleSidebar}
             />
+
+            {/* Mobile Collaborators Drawer - Only visible when toggled */}
+            {showMobileCollaborators && (
+              <div className="2xl:hidden fixed inset-0 z-50 bg-black bg-opacity-50">
+                <div className="absolute right-0 top-0 bottom-0 w-64 bg-white dark:bg-gray-800 shadow-xl">
+                  <CollaboratorsPanel 
+                    presence={presence || []} 
+                    activityLog={activityLog}
+                    onClearActivityLog={handleClearActivityLog}
+                    onClose={toggleMobileCollaborators}
+                    isDrawer={true}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Main Content */}
             <div className="flex-1 relative overflow-hidden">
@@ -726,12 +911,14 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
         )}
       </div>
 
-      {/* Right Sidebar - Collaborators */}
-      <CollaboratorsPanel 
-        presence={presence || []} 
-        activityLog={activityLog}
-        onClearActivityLog={handleClearActivityLog}
-      />
+      {/* Right Sidebar - Collaborators - Hidden on smaller screens, visible on 2xl and above */}
+      <div className="hidden 2xl:block w-64 flex-shrink-0 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
+        <CollaboratorsPanel 
+          presence={presence || []} 
+          activityLog={activityLog}
+          onClearActivityLog={handleClearActivityLog}
+        />
+      </div>
     </div>
   );
 } 

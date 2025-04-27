@@ -10,7 +10,10 @@ export default {
       animation: {
         'spin-reverse': 'spin-reverse 1s linear infinite',
       },
-  },
+      screens: {
+        '2xl': '1200px',
+      },
+    },
   },
   plugins: [],
 }

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Doc } from "../../../convex/_generated/dataModel";
-import { FiPlay, FiCopy, FiTrash2, FiCode, FiCpu, FiUsers, FiCheck, FiX } from "react-icons/fi";
+import { FiPlay, FiCopy, FiTrash2, FiCode, FiCpu, FiUsers, FiCheck, FiX, FiMenu } from "react-icons/fi";
 import { detectLanguage } from "../../utils/languageDetection";
 import { supportedLanguages } from "../../utils/supportedLanguages";
 import FileUploadButton from "../../FileUploadButton";
@@ -36,6 +36,8 @@ interface EditorToolbarProps {
   onLanguageDetected: (language: string) => void;
   isUpdatingLanguage: boolean;
   presence?: UserPresence[];
+  onToggleCollaborators?: () => void;
+  onToggleSidebar?: () => void;
 }
 
 export default function EditorToolbar({
@@ -53,7 +55,9 @@ export default function EditorToolbar({
   onUploadCode,
   onLanguageDetected,
   isUpdatingLanguage,
-  presence
+  presence,
+  onToggleCollaborators,
+  onToggleSidebar
 }: EditorToolbarProps) {
   const [isConfirmClearModalOpen, setIsConfirmClearModalOpen] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -129,8 +133,19 @@ export default function EditorToolbar({
   return (
     <div className={`flex-none border-b ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
       {/* Top bar with file info and actions */}
-      <div className={`flex items-center justify-between px-6 py-3 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+      <div className={`flex items-center justify-between px-3 sm:px-6 py-3 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
         <div className="flex items-center">
+          {/* Sidebar toggle button (only visible on md screens but hidden on 2xl screens) */}
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className="mr-3 p-1.5 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors 2xl:hidden"
+              aria-label="Toggle sidebar"
+            >
+              <FiMenu className="w-5 h-5" />
+            </button>
+          )}
+          
           {isEditingName ? (
             <div className="flex items-center space-x-2">
               <input
@@ -169,16 +184,16 @@ export default function EditorToolbar({
             </div>
           ) : (
             <h2 
-              className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'} cursor-pointer hover:text-indigo-500 transition-colors`}
+              className={`text-lg font-semibold truncate ${isDark ? 'text-white' : 'text-gray-800'} cursor-pointer hover:text-indigo-500 transition-colors`}
               onClick={handleStartEditing}
             >
               {workspace.name}
             </h2>
           )}
           
-          <div className="mx-6 h-5 border-l border-gray-300 dark:border-gray-700"></div>
+          <div className="mx-2 sm:mx-6 h-5 border-l border-gray-300 dark:border-gray-700 hidden sm:block"></div>
           
-          <div className="flex items-center space-x-2">
+          <div className="hidden sm:flex items-center space-x-2">
             <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Language:</span>
             <div className="flex items-center">
               <span className={`text-sm font-medium px-2 py-1 rounded-md ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>
@@ -189,11 +204,13 @@ export default function EditorToolbar({
               )}
             </div>
           </div>
-          
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          {/* Collaborators section */}
           {presence && presence.length > 0 && (
-            <div className={`flex items-center space-x-2 ml-6 pl-4 border-l ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
-              <FiUsers className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-              <div className="flex -space-x-2">
+            <div className="flex items-center mr-2">
+              <div className="flex -space-x-2 mr-2">
                 {presence.slice(0, 3).map((user) => (
                   <div 
                     key={user._id}
@@ -222,11 +239,26 @@ export default function EditorToolbar({
                   </div>
                 )}
               </div>
+              
+              {onToggleCollaborators && (
+                <button
+                  onClick={onToggleCollaborators}
+                  className="2xl:hidden p-1.5 rounded text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors relative"
+                  title="Show collaborators"
+                >
+                  <FiUsers className="w-5 h-5" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-white dark:border-gray-800"></span>
+                </button>
+              )}
+              
+              {/* Desktop view static icon */}
+              <div className="hidden 2xl:block relative">
+                <FiUsers className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-white dark:border-gray-800"></span>
+              </div>
             </div>
           )}
-        </div>
-        
-        <div className="flex items-center space-x-3">
+          
           <FileUploadButton 
             onFileContent={onUploadCode}
             onLanguageDetected={onLanguageDetected}
