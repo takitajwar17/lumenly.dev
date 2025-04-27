@@ -9,9 +9,9 @@ export function SignInForm() {
   const [submitting, setSubmitting] = useState(false);
 
   return (
-    <div className="w-full">
+    <div className="w-full px-4 sm:px-2">
       <form
-        className="flex flex-col gap-4"
+        className="flex flex-col gap-3 sm:gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           setSubmitting(true);
@@ -28,23 +28,27 @@ export function SignInForm() {
         }}
       >
         <input
-          className="input-field"
+          className="input-field text-sm sm:text-base py-2.5 sm:py-3"
           type="email"
           name="email"
           placeholder="Email"
           required
         />
         <input
-          className="input-field"
+          className="input-field text-sm sm:text-base py-2.5 sm:py-3"
           type="password"
           name="password"
           placeholder="Password"
           required
         />
-        <button className="auth-button" type="submit" disabled={submitting}>
+        <button 
+          className="auth-button py-2.5 sm:py-3 mt-1 text-sm sm:text-base bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600" 
+          type="submit" 
+          disabled={submitting}
+        >
           {flow === "signIn" ? "Sign in" : "Sign up"}
         </button>
-        <div className="text-center text-sm text-slate-600">
+        <div className="text-center text-xs sm:text-sm text-slate-600 dark:text-slate-400">
           <span>
             {flow === "signIn"
               ? "Don't have an account? "
@@ -52,19 +56,22 @@ export function SignInForm() {
           </span>
           <button
             type="button"
-            className="text-blue-500 cursor-pointer"
+            className="text-indigo-600 dark:text-indigo-400 font-medium cursor-pointer hover:underline"
             onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
           >
             {flow === "signIn" ? "Sign up instead" : "Sign in instead"}
           </button>
         </div>
       </form>
-      <div className="flex items-center justify-center my-3">
-        <hr className="my-4 grow" />
-        <span className="mx-4 text-slate-400 ">or</span>
-        <hr className="my-4 grow" />
+      <div className="flex items-center justify-center my-2 sm:my-3">
+        <hr className="my-3 grow border-gray-200 dark:border-gray-700" />
+        <span className="mx-3 sm:mx-4 text-xs sm:text-sm text-gray-400 dark:text-gray-500">or</span>
+        <hr className="my-3 grow border-gray-200 dark:border-gray-700" />
       </div>
-      <button className="auth-button" onClick={() => void signIn("anonymous")}>
+      <button 
+        className="auth-button py-2.5 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600" 
+        onClick={() => void signIn("anonymous")}
+      >
         Sign in anonymously
       </button>
     </div>

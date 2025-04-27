@@ -124,14 +124,14 @@ export default function AppContent() {
             </Routes>
           </Authenticated>
           <Unauthenticated>
-            <div className="flex-1 flex items-center justify-center p-8 bg-white dark:bg-gray-900 transition-colors bg-noise">
+            <div className="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-white dark:bg-gray-900 transition-colors bg-noise">
               <div className={`w-full max-w-md mx-auto transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-                <div className="text-center mb-12 relative">
+                <div className="text-center mb-8 sm:mb-10 md:mb-12 relative">
                   {/* Multiple background effects layered */}
                   <div className="absolute inset-0 -z-10 bg-gradient-radial from-indigo-100/70 to-transparent dark:from-indigo-900/20 dark:to-transparent opacity-70 blur-3xl"></div>
                   <div className="absolute inset-0 -z-20 bg-gradient-to-r from-purple-100/10 via-transparent to-indigo-100/10 dark:from-purple-900/10 dark:via-transparent dark:to-indigo-900/10 blur-2xl"></div>
                   
-                  <h1 className="text-6xl mb-3 transition-all relative group">
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl mb-2 md:mb-3 transition-all relative group">
                     <span className="inline-block mb-1">
                       {/* Main logo with decorative elements */}
                       <span className="relative inline-block">
@@ -149,13 +149,13 @@ export default function AppContent() {
                   </h1>
                   
                   {/* Ornamental divider with animation */}
-                  <div className="relative h-px w-32 mx-auto my-8 overflow-hidden">
+                  <div className="relative h-px w-24 sm:w-28 md:w-32 mx-auto my-5 sm:my-6 md:my-8 overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500/70 dark:via-indigo-400/70 to-transparent"></div>
                     <div className="absolute inset-0 logo-shimmer"></div>
                   </div>
                   
                   {/* Tagline with refined typography */}
-                  <p className="text-xl text-gray-600/90 dark:text-gray-300/90 font-light transition-colors tracking-wide">
+                  <p className="text-base sm:text-lg md:text-xl text-gray-600/90 dark:text-gray-300/90 font-light transition-colors tracking-wide">
                     Collaborative coding, <span className="inline-block italic font-normal bg-gradient-to-br from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">reimagined</span>
                   </p>
                 </div>
