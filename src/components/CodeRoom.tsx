@@ -442,6 +442,103 @@ export default function WorkspaceHub() {
     }
   }, [navigate]);
 
+  // Helper function to render workspace cards
+  const renderWorkspaceCard = (roomData: any, index: number) => {
+    const { workspace, activeCollaborators, lastEdited } = roomData;
+    
+    // Format time since last edit
+    const timeAgo = lastEdited ? formatTimeAgo(lastEdited) : null;
+    
+    // Find the language icon if available
+    const language = POPULAR_LANGUAGES.find(lang => lang.id === workspace.language);
+    const IconComponent = language?.icon;
+    
+    return (
+      <button
+        key={workspace._id}
+        onClick={() => void handleSelectRoom(workspace.code)}
+        className="group w-full text-left p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-indigo-50/50 hover:to-purple-50/50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.01] flex flex-col relative overflow-hidden"
+        style={{ 
+          transitionDelay: `${50 * (index % 10)}ms`,
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'translateY(0)' : 'translateY(8px)'
+        }}
+      >
+        {/* Decorative gradient background that shows on hover */}
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 dark:from-indigo-500/10 dark:via-purple-500/10 dark:to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        
+        <div className="flex justify-between items-start relative">
+          <div className="flex items-center">
+            {IconComponent ? (
+              <div className="relative w-10 h-10 mr-3">
+                {/* Background blur effect */}
+                <div className="absolute inset-0 bg-gradient-to-br rounded-xl blur-xl opacity-30"
+                  style={{ background: `linear-gradient(135deg, ${language?.color}40, transparent)` }}
+                ></div>
+                {/* Icon container */}
+                <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-700/50 rounded-lg border border-gray-200/80 dark:border-gray-700/80 shadow-sm overflow-hidden group-hover:border-indigo-200/50 dark:group-hover:border-indigo-700/50 transition-colors duration-300">
+                  <div className="absolute inset-0 bg-gradient-to-br opacity-20 transition-opacity duration-300 group-hover:opacity-30"
+                    style={{ background: `linear-gradient(135deg, ${language?.color}20, transparent)` }}
+                  ></div>
+                  <IconComponent className="w-5 h-5 relative transform group-hover:scale-110 transition-transform duration-300" 
+                    color={language?.color} 
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="relative w-10 h-10 mr-3">
+                <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-700/50 rounded-lg border border-gray-200/80 dark:border-gray-700/80 shadow-sm group-hover:border-indigo-200/50 dark:group-hover:border-indigo-700/50 transition-colors duration-300">
+                  <FiCode className="w-5 h-5 text-gray-500 dark:text-gray-400 transform group-hover:scale-110 transition-transform duration-300" />
+                </div>
+              </div>
+            )}
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white transition-colors text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                {workspace.name}
+              </h3>
+              <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
+                <span>{getLanguageDisplayName(workspace.language)}</span>
+                {timeAgo && (
+                  <>
+                    <span className="mx-1">•</span>
+                    <span className="flex items-center">
+                      <FiClock className="w-3 h-3 mr-0.5" />
+                      {timeAgo}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex flex-col items-end">
+            <span className="text-xs font-medium bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 text-indigo-600 dark:text-indigo-400 py-0.5 px-2 rounded-full transition-colors">
+              {workspace.code}
+            </span>
+            
+            {/* Active users status */}
+            <div className={`flex items-center text-xs rounded-full px-1.5 py-0.5 mt-1 ${
+              activeCollaborators > 0 
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+            }`}>
+              <div className={`w-1.5 h-1.5 rounded-full mr-1 ${
+                activeCollaborators > 0 
+                  ? 'bg-green-500 dark:bg-green-400 animate-pulse' 
+                  : 'bg-gray-400 dark:bg-gray-600'
+              }`}></div>
+              <span className="font-medium">
+                {activeCollaborators > 0 
+                  ? `${activeCollaborators} active` 
+                  : "Inactive"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </button>
+    );
+  };
+
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors bg-noise">
       {/* Create Workspace Modal */}
@@ -656,7 +753,7 @@ export default function WorkspaceHub() {
         </div>
         
         {/* Right side - Recent Activities */}
-        <div className="w-full md:w-1/2 p-4 md:p-8 bg-gray-50 dark:bg-gray-900/30 transition-colors overflow-hidden flex flex-col">
+        <div className="w-full md:w-1/2 p-4 md:p-8 bg-gray-50 dark:bg-gray-900/30 transition-colors overflow-auto flex flex-col">
           <div className="w-full max-w-md lg:max-w-[85%] xl:max-w-[85%] mx-auto flex flex-col h-full">
             <h2 className={`text-lg md:text-xl font-semibold mb-4 md:mb-5 text-gray-900 dark:text-white transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} flex items-center sticky top-0 bg-gray-50 dark:bg-gray-900/30 z-10 py-2`}>
               <div className="mr-2 w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/40 dark:to-indigo-800/40 flex items-center justify-center shadow-sm">
@@ -665,21 +762,6 @@ export default function WorkspaceHub() {
               Recent Activity & Workspaces
             </h2>
             
-            {/* Activity Graph */}
-            <div className={`transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-              <div className="relative flex items-center mb-4">
-                <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
-                <div className="mx-3 flex items-center">
-                  <span className="bg-gray-50 dark:bg-gray-900/30 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                    <FiActivity className="mr-1.5 text-indigo-500 dark:text-indigo-400" />
-                    Activity Summary
-                  </span>
-                </div>
-                <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
-              </div>
-              <ActivityGraph refreshKey={activityRefreshKey} />
-            </div>
-          
             {isLoading ? (
               <div className="flex items-center justify-center h-48 md:h-64">
                 <div className="relative w-12 h-12 md:w-16 md:h-16">
@@ -691,115 +773,74 @@ export default function WorkspaceHub() {
               </div>
             ) : roomsWithPresence && roomsWithPresence.length > 0 ? (
               <div className="flex-1 overflow-auto">
-                <div className={`transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-                  {/* Separator with label */}
-                  <div className="relative flex items-center my-6">
-                    <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
-                    <div className="mx-3 flex items-center">
-                      <span className="bg-gray-50 dark:bg-gray-900/30 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                        <FiCode className="mr-1.5 text-indigo-500 dark:text-indigo-400" />
-                        Recent Workspaces
-                      </span>
+                {/* Mobile layout (workspaces first, then activity) */}
+                <div className="md:hidden">
+                  <div className={`transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                    {/* Workspaces section */}
+                    <div className="relative flex items-center mb-4">
+                      <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+                      <div className="mx-3 flex items-center">
+                        <span className="bg-gray-50 dark:bg-gray-900/30 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                          <FiCode className="mr-1.5 text-indigo-500 dark:text-indigo-400" />
+                          Recent Workspaces
+                        </span>
+                      </div>
+                      <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
                     </div>
-                    <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+                    
+                    <div className="space-y-3 mb-6">
+                      {roomsWithPresence.map((roomData, index) => renderWorkspaceCard(roomData, index))}
+                    </div>
                   </div>
                   
-                  <div className="space-y-3 pb-4">
-                    {roomsWithPresence.map((roomData, index) => {
-                      const { workspace, activeCollaborators, lastEdited } = roomData;
-                      
-                      // Format time since last edit
-                      const timeAgo = lastEdited ? formatTimeAgo(lastEdited) : null;
-                      
-                      // Find the language icon if available
-                      const language = POPULAR_LANGUAGES.find(lang => lang.id === workspace.language);
-                      const IconComponent = language?.icon;
-                      
-                      return (
-                        <button
-                          key={workspace._id}
-                          onClick={() => void handleSelectRoom(workspace.code)}
-                          className="group w-full text-left p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-indigo-50/50 hover:to-purple-50/50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.01] flex flex-col relative overflow-hidden"
-                          style={{ 
-                            transitionDelay: `${50 * (index % 10)}ms`,
-                            opacity: mounted ? 1 : 0,
-                            transform: mounted ? 'translateY(0)' : 'translateY(8px)'
-                          }}
-                        >
-                          {/* Decorative gradient background that shows on hover */}
-                          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 dark:from-indigo-500/10 dark:via-purple-500/10 dark:to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                          
-                          <div className="flex justify-between items-start relative">
-                            <div className="flex items-center">
-                              {IconComponent ? (
-                                <div className="relative w-10 h-10 mr-3">
-                                  {/* Background blur effect */}
-                                  <div className="absolute inset-0 bg-gradient-to-br rounded-xl blur-xl opacity-30"
-                                    style={{ background: `linear-gradient(135deg, ${language?.color}40, transparent)` }}
-                                  ></div>
-                                  {/* Icon container */}
-                                  <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-700/50 rounded-lg border border-gray-200/80 dark:border-gray-700/80 shadow-sm overflow-hidden group-hover:border-indigo-200/50 dark:group-hover:border-indigo-700/50 transition-colors duration-300">
-                                    <div className="absolute inset-0 bg-gradient-to-br opacity-20 transition-opacity duration-300 group-hover:opacity-30"
-                                      style={{ background: `linear-gradient(135deg, ${language?.color}20, transparent)` }}
-                                    ></div>
-                                    <IconComponent className="w-5 h-5 relative transform group-hover:scale-110 transition-transform duration-300" 
-                                      color={language?.color} 
-                                    />
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="relative w-10 h-10 mr-3">
-                                  <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-700/50 rounded-lg border border-gray-200/80 dark:border-gray-700/80 shadow-sm group-hover:border-indigo-200/50 dark:group-hover:border-indigo-700/50 transition-colors duration-300">
-                                    <FiCode className="w-5 h-5 text-gray-500 dark:text-gray-400 transform group-hover:scale-110 transition-transform duration-300" />
-                                  </div>
-                                </div>
-                              )}
-                              <div>
-                                <h3 className="font-semibold text-gray-900 dark:text-white transition-colors text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                                  {workspace.name}
-                                </h3>
-                                <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-                                  <span>{getLanguageDisplayName(workspace.language)}</span>
-                                  {timeAgo && (
-                                    <>
-                                      <span className="mx-1">•</span>
-                                      <span className="flex items-center">
-                                        <FiClock className="w-3 h-3 mr-0.5" />
-                                        {timeAgo}
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="flex flex-col items-end">
-                              <span className="text-xs font-medium bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 text-indigo-600 dark:text-indigo-400 py-0.5 px-2 rounded-full transition-colors">
-                                {workspace.code}
-                              </span>
-                              
-                              {/* Active users status */}
-                              <div className={`flex items-center text-xs rounded-full px-1.5 py-0.5 mt-1 ${
-                                activeCollaborators > 0 
-                                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
-                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                              }`}>
-                                <div className={`w-1.5 h-1.5 rounded-full mr-1 ${
-                                  activeCollaborators > 0 
-                                    ? 'bg-green-500 dark:bg-green-400 animate-pulse' 
-                                    : 'bg-gray-400 dark:bg-gray-600'
-                                }`}></div>
-                                <span className="font-medium">
-                                  {activeCollaborators > 0 
-                                    ? `${activeCollaborators} active` 
-                                    : "Inactive"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
+                  {/* Activity section on mobile */}
+                  <div className={`transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                    <div className="relative flex items-center mb-4">
+                      <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+                      <div className="mx-3 flex items-center">
+                        <span className="bg-gray-50 dark:bg-gray-900/30 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                          <FiActivity className="mr-1.5 text-indigo-500 dark:text-indigo-400" />
+                          Activity Summary
+                        </span>
+                      </div>
+                      <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+                    </div>
+                    <ActivityGraph refreshKey={activityRefreshKey} />
+                  </div>
+                </div>
+                
+                {/* Desktop layout (original order - activity first, then workspaces) */}
+                <div className="hidden md:block">
+                  <div className={`transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                    <div className="relative flex items-center mb-4">
+                      <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+                      <div className="mx-3 flex items-center">
+                        <span className="bg-gray-50 dark:bg-gray-900/30 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                          <FiActivity className="mr-1.5 text-indigo-500 dark:text-indigo-400" />
+                          Activity Summary
+                        </span>
+                      </div>
+                      <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+                    </div>
+                    <ActivityGraph refreshKey={activityRefreshKey} />
+                  </div>
+                  
+                  <div className={`transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                    {/* Separator with label */}
+                    <div className="relative flex items-center my-6">
+                      <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+                      <div className="mx-3 flex items-center">
+                        <span className="bg-gray-50 dark:bg-gray-900/30 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                          <FiCode className="mr-1.5 text-indigo-500 dark:text-indigo-400" />
+                          Recent Workspaces
+                        </span>
+                      </div>
+                      <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+                    </div>
+                    
+                    <div className="space-y-3 pb-4">
+                      {roomsWithPresence.map((roomData, index) => renderWorkspaceCard(roomData, index))}
+                    </div>
                   </div>
                 </div>
               </div>
