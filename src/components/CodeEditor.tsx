@@ -171,14 +171,14 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     }
   }, [selectedRoomId, workspace, isLoading, navigate]);
   
-  // Debounced server update function
+  // Debounced server update function with pending update tracking
   const debouncedUpdateCode = useMemo(
-    () =>
+    () => 
       debounce((value: string) => {
         if (!selectedRoomId) return;
         void updateCode({ roomId: selectedRoomId, code: value });
         setLastSaved(new Date());
-      }, 500), // 500ms debounce delay
+      }, 300), // 300ms debounce delay
     [selectedRoomId, updateCode]
   );
 
@@ -246,48 +246,71 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     });
   }, [location.pathname]);
 
-  // Update presence tracking effect
+  // Update presence tracking effect for better performance
   useEffect(() => {
     if (!selectedRoomId || !editorRef.current) return;
     
-    // Update presence in intervals to ensure consistent visibility
+    // Presence update interval - reduced frequency for better performance
     const intervalId = setInterval(() => {
-      const position = editorRef.current.getPosition();
-      const selection = editorRef.current.getSelection();
+      if (!editorRef.current) return;
       
-      if (position) {
-        // For interval updates, always set isTyping to false
-        void updatePresence({
-          roomId: selectedRoomId,
-          cursor: {
-            line: position.lineNumber,
-            column: position.column,
-          },
-          selection: selection ? {
-            startLine: selection.startLineNumber,
-            startColumn: selection.startColumn,
-            endLine: selection.endLineNumber,
-            endColumn: selection.endColumn,
-          } : undefined,
-          isActive: false,
-          isTyping: false
-        });
-      }
-    }, 5000); // Update every 5 seconds
-    
-    // Add a more frequent heartbeat ping (every 3 seconds)
-    const heartbeatId = setInterval(() => {
-      if (editorRef.current) {
+      const now = Date.now();
+      const isActivelyTyping = now - lastTypingTime < 1000;
+      
+      // Skip presence updates during active typing
+      if (!isActivelyTyping) {
         const position = editorRef.current.getPosition();
-        if (position && selectedRoomId) {
+        const selection = editorRef.current.getSelection();
+        
+        if (position) {
           void updatePresence({
             roomId: selectedRoomId,
             cursor: {
               line: position.lineNumber,
               column: position.column,
             },
-            isActive: true
+            selection: selection ? {
+              startLine: selection.startLineNumber,
+              startColumn: selection.startColumn,
+              endLine: selection.endLineNumber,
+              endColumn: selection.endColumn,
+            } : undefined,
+            isActive: false,
+            isTyping: false
           });
+        }
+      }
+    }, 10000); // Reduced frequency to 10 seconds for better network performance
+    
+    // Minimal heartbeat ping
+    const heartbeatId = setInterval(() => {
+      const now = Date.now();
+      const isUserActivelyTyping = now - lastTypingTime < 2000;
+      
+      if (editorRef.current && selectedRoomId) {
+        if (isUserActivelyTyping) {
+          // During active typing, don't update cursor position
+          // This is crucial to prevent disappearing characters
+          void updatePresence({
+            roomId: selectedRoomId,
+            // Dummy cursor position to satisfy API requirements
+            cursor: { line: 1, column: 1 },
+            isActive: true,
+            isTyping: true
+          });
+        } else {
+          const position = editorRef.current.getPosition();
+          if (position) {
+            void updatePresence({
+              roomId: selectedRoomId,
+              cursor: {
+                line: position.lineNumber,
+                column: position.column,
+              },
+              isActive: true,
+              isTyping: false
+            });
+          }
         }
       }
     }, 3000);
@@ -300,53 +323,64 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
         clearTimeout(typingTimeoutId);
       }
     };
-  }, [selectedRoomId, updatePresence, typingTimeoutId]);
+  }, [selectedRoomId, updatePresence, typingTimeoutId, lastTypingTime]);
   
   // Store editor instance reference
   const editorRef = useRef<any>(null);
 
+  // Improved editor change handler with optimized performance
   const handleEditorChange = useCallback((value: string | undefined) => {
     if (!value || !selectedRoomId) return;
-    setLocalCode(value); // Update local state immediately
+    
+    // Immediately update local state to ensure UI is responsive
+    setLocalCode(value);
     setCode(value);
     
     // Calculate word count
     const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
     setWordCount(wordCount);
-    debouncedUpdateCode(value); // Debounced server update
     
-    // Update typing timestamp
+    // Track typing time for presence updates
     setLastTypingTime(Date.now());
     
-    // User is actively typing
+    // Use a standard debounced update instead of the complex version with potential bugs
+    debouncedUpdateCode(value);
+    
+    // Optimize cursor presence during active typing
     if (editorRef.current) {
       const position = editorRef.current.getPosition();
       const selection = editorRef.current.getSelection();
       
       if (position && selectedRoomId) {
-        // Set both isActive and isTyping to true for actual text changes
-        void updatePresence({
-          roomId: selectedRoomId,
-          cursor: {
-            line: position.lineNumber,
-            column: position.column,
-          },
-          selection: selection ? {
-            startLine: selection.startLineNumber,
-            startColumn: selection.startColumn,
-            endLine: selection.endLineNumber,
-            endColumn: selection.endColumn,
-          } : undefined,
-          isActive: true,
-          isTyping: true
-        });
-        
         // Clear any existing typing timeout
         if (typingTimeoutId) {
           clearTimeout(typingTimeoutId);
         }
         
-        // Set a new timeout to turn off the typing flag after 500ms
+        // Set active typing state with minimal updates
+        // Skip sending cursor updates during active typing to prevent disappearing characters
+        const now = Date.now();
+        const shouldUpdatePresence = now - lastTypingTime > 300; // Only update presence periodically during typing
+        
+        if (shouldUpdatePresence) {
+          void updatePresence({
+            roomId: selectedRoomId,
+            cursor: {
+              line: position.lineNumber,
+              column: position.column,
+            },
+            selection: selection ? {
+              startLine: selection.startLineNumber,
+              startColumn: selection.startColumn,
+              endLine: selection.endLineNumber,
+              endColumn: selection.endColumn,
+            } : undefined,
+            isActive: true,
+            isTyping: true
+          });
+        }
+        
+        // Set a timeout to mark the end of typing
         const timeoutId = setTimeout(() => {
           if (editorRef.current && selectedRoomId) {
             const currentPosition = editorRef.current.getPosition();
@@ -370,12 +404,12 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
               });
             }
           }
-        }, 500);
+        }, 800); // Increased timeout for better fast typing handling
         
         setTypingTimeoutId(timeoutId);
       }
     }
-  }, [selectedRoomId, updatePresence, debouncedUpdateCode, typingTimeoutId]);
+  }, [selectedRoomId, updatePresence, debouncedUpdateCode, typingTimeoutId, lastTypingTime]);
 
   // Add an additional handler for selection changes
   useEffect(() => {
@@ -453,7 +487,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     }
   }, [localCode]);
 
-  // Editor options
+  // Enhanced Editor options for better performance
   const editorOptions = useMemo(() => ({
     fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
     fontSize: 14,
@@ -467,11 +501,27 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
     renderLineHighlight: 'all',
-    cursorBlinking: 'smooth',
-    cursorSmoothCaretAnimation: 'on',
+    cursorBlinking: 'smooth' as 'smooth',
+    cursorSmoothCaretAnimation: 'on' as 'on',
     smoothScrolling: true,
+    scrollbar: {
+      verticalScrollbarSize: 12,
+      horizontalScrollbarSize: 12,
+      vertical: 'visible' as 'visible',
+      horizontal: 'visible' as 'visible',
+      useShadows: true,
+      verticalHasArrows: false,
+      horizontalHasArrows: false,
+      alwaysConsumeMouseWheel: false,
+      scrollByPage: false
+    },
     tabSize: 2,
     automaticLayout: true,
+    wordBasedSuggestions: 'off' as 'off',
+    quickSuggestions: false,
+    occurrencesHighlight: 'off' as 'off',
+    renderWhitespace: 'none' as 'none',
+    renderControlCharacters: false
   }), []);
 
   const handleRunCode = useCallback(async () => {
@@ -813,29 +863,48 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
                     value={localCode}
                     onChange={handleEditorChange}
                     theme={theme === 'dark' ? 'vs-dark' : 'light'}
-                    options={{
-                      wordWrap: 'on',
-                      minimap: { enabled: false },
-                      fontSize: 14,
-                      fontFamily: 'Fira Code, Menlo, Monaco, Consolas, "Courier New", monospace',
-                      tabSize: 2,
-                      automaticLayout: true,
-                      scrollBeyondLastLine: false,
-                      padding: { top: 16 },
-                    }}
+                    options={editorOptions}
                     onMount={(editor, monaco) => {
                       // Store editor reference
                       editorRef.current = editor;
                       
-                      editor.onDidChangeCursorPosition(() => {
-                        const position = editor.getPosition();
-                        const selection = editor.getSelection();
-                        if (position) {
-                          setCursorPosition({
-                            line: position.lineNumber,
-                            column: position.column
-                          });
-                          debouncedUpdatePresence(position, selection, true);
+                      // Configure for better performance
+                      monaco.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'light');
+                      
+                      // Optimize editor for performance
+                      editor.updateOptions({
+                        renderValidationDecorations: 'off' as 'off',
+                        lightbulb: { enabled: 'off' },
+                        formatOnType: false,
+                        formatOnPaste: false,
+                        selectionHighlight: false,
+                        matchBrackets: 'never' as 'never',
+                        contextmenu: false,
+                      });
+                      
+                      // Throttled cursor position handler
+                      let lastCursorUpdateTime = 0;
+                      editor.onDidChangeCursorPosition((e) => {
+                        const now = Date.now();
+                        
+                        // Limit cursor updates to prevent UI lag
+                        if (now - lastCursorUpdateTime > 100) {
+                          lastCursorUpdateTime = now;
+                          
+                          const position = editor.getPosition();
+                          const selection = editor.getSelection();
+                          
+                          if (position) {
+                            setCursorPosition({
+                              line: position.lineNumber,
+                              column: position.column
+                            });
+                            
+                            // Only update cursor presence if not actively typing
+                            if (now - lastTypingTime > 500) {
+                              debouncedUpdatePresence(position, selection, true);
+                            }
+                          }
                         }
                       });
                       
