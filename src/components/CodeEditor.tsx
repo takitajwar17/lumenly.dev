@@ -173,12 +173,30 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
   
   // Debounced server update function with pending update tracking
   const debouncedUpdateCode = useMemo(
-    () => 
-      debounce((value: string) => {
+    () => {
+      // Create a simple but effective debounce implementation
+      let timeoutId: NodeJS.Timeout | null = null;
+      
+      return (value: string) => {
         if (!selectedRoomId) return;
-        void updateCode({ roomId: selectedRoomId, code: value });
-        setLastSaved(new Date());
-      }, 300), // 300ms debounce delay
+        
+        // Clear any existing timeout
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        
+        // Set a new timeout
+        timeoutId = setTimeout(() => {
+          void updateCode({ roomId: selectedRoomId, code: value })
+            .then(() => {
+              setLastSaved(new Date());
+            })
+            .catch(error => {
+              console.error("Failed to update code:", error);
+            });
+        }, 300); // 300ms debounce
+      };
+    },
     [selectedRoomId, updateCode]
   );
 
@@ -257,7 +275,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
       const now = Date.now();
       const isActivelyTyping = now - lastTypingTime < 1000;
       
-      // Skip presence updates during active typing
+      // Don't update presence during active typing
       if (!isActivelyTyping) {
         const position = editorRef.current.getPosition();
         const selection = editorRef.current.getSelection();
@@ -280,7 +298,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
           });
         }
       }
-    }, 10000); // Reduced frequency to 10 seconds for better network performance
+    }, 10000); // Just once every 10 seconds is enough
     
     // Minimal heartbeat ping
     const heartbeatId = setInterval(() => {
@@ -289,12 +307,11 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
       
       if (editorRef.current && selectedRoomId) {
         if (isUserActivelyTyping) {
-          // During active typing, don't update cursor position
-          // This is crucial to prevent disappearing characters
+          // During active typing, use a fixed cursor position 
+          // to avoid interfering with user's typing
           void updatePresence({
             roomId: selectedRoomId,
-            // Dummy cursor position to satisfy API requirements
-            cursor: { line: 1, column: 1 },
+            cursor: { line: 1, column: 1 }, // Fixed position won't interfere
             isActive: true,
             isTyping: true
           });
@@ -332,7 +349,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
   const handleEditorChange = useCallback((value: string | undefined) => {
     if (!value || !selectedRoomId) return;
     
-    // Immediately update local state to ensure UI is responsive
+    // Always update local state immediately for responsive UI
     setLocalCode(value);
     setCode(value);
     
@@ -340,76 +357,53 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
     setWordCount(wordCount);
     
-    // Track typing time for presence updates
-    setLastTypingTime(Date.now());
+    // Record the typing time
+    const now = Date.now();
+    setLastTypingTime(now);
     
-    // Use a standard debounced update instead of the complex version with potential bugs
+    // Debounce server updates to avoid overwhelming the network
     debouncedUpdateCode(value);
     
-    // Optimize cursor presence during active typing
+    // Manage cursor presence during typing
     if (editorRef.current) {
-      const position = editorRef.current.getPosition();
-      const selection = editorRef.current.getSelection();
-      
-      if (position && selectedRoomId) {
-        // Clear any existing typing timeout
-        if (typingTimeoutId) {
-          clearTimeout(typingTimeoutId);
-        }
-        
-        // Set active typing state with minimal updates
-        // Skip sending cursor updates during active typing to prevent disappearing characters
-        const now = Date.now();
-        const shouldUpdatePresence = now - lastTypingTime > 300; // Only update presence periodically during typing
-        
-        if (shouldUpdatePresence) {
-          void updatePresence({
-            roomId: selectedRoomId,
-            cursor: {
-              line: position.lineNumber,
-              column: position.column,
-            },
-            selection: selection ? {
-              startLine: selection.startLineNumber,
-              startColumn: selection.startColumn,
-              endLine: selection.endLineNumber,
-              endColumn: selection.endColumn,
-            } : undefined,
-            isActive: true,
-            isTyping: true
-          });
-        }
-        
-        // Set a timeout to mark the end of typing
-        const timeoutId = setTimeout(() => {
-          if (editorRef.current && selectedRoomId) {
-            const currentPosition = editorRef.current.getPosition();
-            const currentSelection = editorRef.current.getSelection();
-            
-            if (currentPosition) {
-              void updatePresence({
-                roomId: selectedRoomId,
-                cursor: {
-                  line: currentPosition.lineNumber,
-                  column: currentPosition.column,
-                },
-                selection: currentSelection ? {
-                  startLine: currentSelection.startLineNumber,
-                  startColumn: currentSelection.startColumn,
-                  endLine: currentSelection.endLineNumber,
-                  endColumn: currentSelection.endColumn,
-                } : undefined,
-                isActive: true,
-                isTyping: false // Turn off typing status
-              });
-            }
-          }
-        }, 800); // Increased timeout for better fast typing handling
-        
-        setTypingTimeoutId(timeoutId);
+      // Clear any existing typing timeout
+      if (typingTimeoutId) {
+        clearTimeout(typingTimeoutId);
       }
+      
+      // During fast typing, don't send cursor position to others
+      // This prevents cursor jumps and character loss
+      
+      // Set a timeout to indicate when typing has stopped
+      const timeoutId = setTimeout(() => {
+        if (editorRef.current && selectedRoomId) {
+          const currentPosition = editorRef.current.getPosition();
+          const currentSelection = editorRef.current.getSelection();
+          
+          if (currentPosition) {
+            // Send cursor position after typing has stopped
+            void updatePresence({
+              roomId: selectedRoomId,
+              cursor: {
+                line: currentPosition.lineNumber,
+                column: currentPosition.column,
+              },
+              selection: currentSelection ? {
+                startLine: currentSelection.startLineNumber,
+                startColumn: currentSelection.startColumn,
+                endLine: currentSelection.endLineNumber,
+                endColumn: currentSelection.endColumn,
+              } : undefined,
+              isActive: true,
+              isTyping: false
+            });
+          }
+        }
+      }, 750); // Longer timeout for better fast typing handling
+      
+      setTypingTimeoutId(timeoutId);
     }
-  }, [selectedRoomId, updatePresence, debouncedUpdateCode, typingTimeoutId, lastTypingTime]);
+  }, [selectedRoomId, debouncedUpdateCode, typingTimeoutId]);
 
   // Add an additional handler for selection changes
   useEffect(() => {
@@ -500,15 +494,15 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     },
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
-    renderLineHighlight: 'all',
-    cursorBlinking: 'smooth' as 'smooth',
-    cursorSmoothCaretAnimation: 'on' as 'on',
+    renderLineHighlight: "all" as const,
+    cursorBlinking: "smooth" as const,
+    cursorSmoothCaretAnimation: "on" as const,
     smoothScrolling: true,
     scrollbar: {
       verticalScrollbarSize: 12,
       horizontalScrollbarSize: 12,
-      vertical: 'visible' as 'visible',
-      horizontal: 'visible' as 'visible',
+      vertical: "visible" as const,
+      horizontal: "visible" as const,
       useShadows: true,
       verticalHasArrows: false,
       horizontalHasArrows: false,
@@ -517,10 +511,10 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     },
     tabSize: 2,
     automaticLayout: true,
-    wordBasedSuggestions: 'off' as 'off',
+    wordBasedSuggestions: "off" as const,
     quickSuggestions: false,
-    occurrencesHighlight: 'off' as 'off',
-    renderWhitespace: 'none' as 'none',
+    occurrencesHighlight: "off" as const,
+    renderWhitespace: "none" as const,
     renderControlCharacters: false
   }), []);
 
@@ -873,12 +867,11 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
                       
                       // Optimize editor for performance
                       editor.updateOptions({
-                        renderValidationDecorations: 'off' as 'off',
-                        lightbulb: { enabled: 'off' },
+                        renderValidationDecorations: "off" as const,
                         formatOnType: false,
                         formatOnPaste: false,
                         selectionHighlight: false,
-                        matchBrackets: 'never' as 'never',
+                        matchBrackets: "never" as const,
                         contextmenu: false,
                       });
                       
