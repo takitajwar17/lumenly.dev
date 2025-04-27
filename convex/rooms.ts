@@ -381,3 +381,25 @@ export const leaveRoom = mutation({
     return { success: true };
   },
 });
+
+export const updateRoomName = mutation({
+  args: {
+    roomId: v.id("rooms"),
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Verify the room exists
+    const room = await ctx.db.get(args.roomId);
+    if (!room) throw new Error("Room not found");
+
+    // Update the room name
+    await ctx.db.patch(args.roomId, {
+      name: args.name,
+    });
+
+    return { success: true };
+  },
+});

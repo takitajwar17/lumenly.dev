@@ -156,8 +156,9 @@ export default function CodeRoom() {
                   id="roomName"
                   type="text"
                   value={newRoomName}
-                  onChange={(e) => setNewRoomName(e.target.value.toUpperCase())}
+                  onChange={(e) => setNewRoomName(e.target.value.toUpperCase().slice(0, 30))}
                   placeholder="Enter room name"
+                  maxLength={30}
                   className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-3 py-1.5 xs:py-2 sm:py-2.5 text-sm xs:text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-colors"
                   disabled={isLoading}
                   autoFocus

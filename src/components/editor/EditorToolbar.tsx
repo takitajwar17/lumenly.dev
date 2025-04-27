@@ -1,11 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Doc } from "../../../convex/_generated/dataModel";
-import { FiPlay, FiCopy, FiTrash2, FiCode, FiCpu, FiUsers } from "react-icons/fi";
+import { FiPlay, FiCopy, FiTrash2, FiCode, FiCpu, FiUsers, FiCheck, FiX } from "react-icons/fi";
 import { detectLanguage } from "../../utils/languageDetection";
 import { supportedLanguages } from "../../utils/supportedLanguages";
 import FileUploadButton from "../../FileUploadButton";
 import ConfirmModal from "../../ConfirmModal";
 import { useTheme } from "../../ThemeContext";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { toast } from "sonner";
 
 // Define a proper type for user presence
 interface UserPresence {
@@ -53,8 +56,62 @@ export default function EditorToolbar({
   presence
 }: EditorToolbarProps) {
   const [isConfirmClearModalOpen, setIsConfirmClearModalOpen] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(room.name);
+  const editInputRef = useRef<HTMLInputElement>(null);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  
+  const updateRoomName = useMutation(api.rooms.updateRoomName);
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditingName && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [isEditingName]);
+
+  const handleStartEditing = () => {
+    setEditedName(room.name);
+    setIsEditingName(true);
+  };
+
+  const handleSaveName = async () => {
+    const newName = editedName.trim().toUpperCase();
+    if (!newName) {
+      setEditedName(room.name);
+      setIsEditingName(false);
+      return;
+    }
+
+    if (newName !== room.name) {
+      try {
+        await updateRoomName({
+          roomId: room._id,
+          name: newName
+        });
+        toast.success("Room name updated");
+      } catch (error) {
+        toast.error("Failed to update room name");
+        setEditedName(room.name);
+      }
+    }
+    setIsEditingName(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedName(room.name);
+    setIsEditingName(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      void handleSaveName();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
 
   const handleClearButtonClick = () => {
     setIsConfirmClearModalOpen(true);
@@ -73,8 +130,54 @@ export default function EditorToolbar({
     <div className={`flex-none border-b ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
       {/* Top bar with file info and actions */}
       <div className={`flex items-center justify-between px-6 py-3 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-        <div className="flex items-center space-x-6">
-          <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{room.name}</h2>
+        <div className="flex items-center">
+          {isEditingName ? (
+            <div className="flex items-center space-x-2">
+              <input
+                ref={editInputRef}
+                type="text"
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value.toUpperCase().slice(0, 30))}
+                onKeyDown={handleKeyDown}
+                maxLength={30}
+                className={`text-lg font-semibold px-2 py-1 rounded-md border ${
+                  isDark 
+                    ? 'bg-gray-700 border-gray-600 text-white focus:border-indigo-500' 
+                    : 'bg-white border-gray-300 text-gray-800 focus:border-indigo-500'
+                } focus:ring-1 focus:ring-indigo-500 outline-none`}
+              />
+              <button
+                onClick={() => void handleSaveName()}
+                className={`p-1.5 rounded-md ${
+                  isDark 
+                    ? 'hover:bg-gray-700 text-green-400' 
+                    : 'hover:bg-gray-200 text-green-600'
+                }`}
+              >
+                <FiCheck className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className={`p-1.5 rounded-md ${
+                  isDark 
+                    ? 'hover:bg-gray-700 text-red-400' 
+                    : 'hover:bg-gray-200 text-red-600'
+                }`}
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <h2 
+              className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'} cursor-pointer hover:text-indigo-500 transition-colors`}
+              onClick={handleStartEditing}
+            >
+              {room.name}
+            </h2>
+          )}
+          
+          <div className="mx-6 h-5 border-l border-gray-300 dark:border-gray-700"></div>
+          
           <div className="flex items-center space-x-2">
             <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Language:</span>
             <div className="flex items-center">
@@ -86,8 +189,9 @@ export default function EditorToolbar({
               )}
             </div>
           </div>
+          
           {presence && presence.length > 0 && (
-            <div className={`flex items-center space-x-2 pl-4 border-l ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
+            <div className={`flex items-center space-x-2 ml-6 pl-4 border-l ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
               <FiUsers className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
               <div className="flex -space-x-2">
                 {presence.slice(0, 3).map((user) => (
