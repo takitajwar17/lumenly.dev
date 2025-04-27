@@ -367,15 +367,15 @@ export default function CodeRoom() {
         </div>
         
         {/* Right side - Recent Rooms */}
-        <div className="w-full md:w-1/2 p-4 md:p-8 bg-gray-50 dark:bg-gray-900/30 transition-colors overflow-auto flex flex-col items-center">
-          <div className="w-full max-w-md lg:max-w-[80%] xl:max-w-[80%]">
-            <h2 className={`text-lg md:text-xl font-semibold mb-4 md:mb-5 text-gray-900 dark:text-white transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} flex items-center`}>
+        <div className="w-full md:w-1/2 p-4 md:p-8 bg-gray-50 dark:bg-gray-900/30 transition-colors overflow-hidden flex flex-col">
+          <div className="w-full max-w-md lg:max-w-[80%] xl:max-w-[80%] mx-auto flex flex-col h-full">
+            <h2 className={`text-lg md:text-xl font-semibold mb-4 md:mb-5 text-gray-900 dark:text-white transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} flex items-center sticky top-0 bg-gray-50 dark:bg-gray-900/30 z-10 py-2`}>
               <div className="mr-2 w-6 h-6 md:w-7 md:h-7 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
                 <FiCode className="text-gray-500 dark:text-gray-400" />
               </div>
               Your Recent Rooms
             </h2>
-            
+          
             {isLoading ? (
               <div className="flex items-center justify-center h-48 md:h-64">
                 <div className="relative w-12 h-12 md:w-16 md:h-16">
@@ -386,113 +386,115 @@ export default function CodeRoom() {
                 </div>
               </div>
             ) : roomsWithPresence && roomsWithPresence.length > 0 ? (
-              <div className={`overflow-auto max-h-[calc(100vh-160px)] md:max-h-[500px] pr-2 pb-4 transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} scrollbar-hide`}>
-                <div className="space-y-3">
-                  {roomsWithPresence.map((roomData, index) => {
-                    const { room, activeCollaborators, lastEdited } = roomData;
-                    
-                    // Format time since last edit
-                    const timeAgo = lastEdited ? formatTimeAgo(lastEdited) : null;
-                    
-                    // Find the language icon if available
-                    const language = POPULAR_LANGUAGES.find(lang => lang.id === room.language);
-                    const IconComponent = language?.icon;
-                    
-                    return (
-                      <button
-                        key={room._id}
-                        onClick={() => void handleSelectRoom(room.code)}
-                        className="group w-full text-left p-3 md:p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-indigo-50/50 hover:to-purple-50/50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] flex flex-col relative overflow-hidden"
-                        style={{ 
-                          transitionDelay: `${50 * (index % 10)}ms`,
-                          opacity: mounted ? 1 : 0,
-                          transform: mounted ? 'translateY(0)' : 'translateY(8px)'
-                        }}
-                      >
-                        {/* Decorative gradient background that shows on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 dark:from-indigo-500/10 dark:via-purple-500/10 dark:to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        
-                        <div className="flex justify-between items-start mb-2 relative">
-                          <div className="flex items-center">
-                            {IconComponent ? (
-                              <div className="relative w-10 h-10 md:w-12 md:h-12 mr-3">
-                                {/* Background blur effect */}
-                                <div className="absolute inset-0 bg-gradient-to-br rounded-xl blur-xl opacity-30"
-                                  style={{ background: `linear-gradient(135deg, ${language?.color}40, transparent)` }}
-                                ></div>
-                                {/* Icon container */}
-                                <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-700/50 rounded-xl border border-gray-200/80 dark:border-gray-700/80 shadow-sm overflow-hidden group-hover:border-indigo-200/50 dark:group-hover:border-indigo-700/50 transition-colors duration-300">
-                                  <div className="absolute inset-0 bg-gradient-to-br opacity-20 transition-opacity duration-300 group-hover:opacity-30"
-                                    style={{ background: `linear-gradient(135deg, ${language?.color}20, transparent)` }}
+              <div className="flex-1 overflow-auto">
+                <div className={`h-full overflow-auto transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                  <div className="space-y-3 pb-4">
+                    {roomsWithPresence.map((roomData, index) => {
+                      const { room, activeCollaborators, lastEdited } = roomData;
+                      
+                      // Format time since last edit
+                      const timeAgo = lastEdited ? formatTimeAgo(lastEdited) : null;
+                      
+                      // Find the language icon if available
+                      const language = POPULAR_LANGUAGES.find(lang => lang.id === room.language);
+                      const IconComponent = language?.icon;
+                      
+                      return (
+                        <button
+                          key={room._id}
+                          onClick={() => void handleSelectRoom(room.code)}
+                          className="group w-full text-left p-3 md:p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-indigo-50/50 hover:to-purple-50/50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] flex flex-col relative overflow-hidden"
+                          style={{ 
+                            transitionDelay: `${50 * (index % 10)}ms`,
+                            opacity: mounted ? 1 : 0,
+                            transform: mounted ? 'translateY(0)' : 'translateY(8px)'
+                          }}
+                        >
+                          {/* Decorative gradient background that shows on hover */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 dark:from-indigo-500/10 dark:via-purple-500/10 dark:to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                          
+                          <div className="flex justify-between items-start mb-2 relative">
+                            <div className="flex items-center">
+                              {IconComponent ? (
+                                <div className="relative w-10 h-10 md:w-12 md:h-12 mr-3">
+                                  {/* Background blur effect */}
+                                  <div className="absolute inset-0 bg-gradient-to-br rounded-xl blur-xl opacity-30"
+                                    style={{ background: `linear-gradient(135deg, ${language?.color}40, transparent)` }}
                                   ></div>
-                                  <IconComponent className="w-5 h-5 md:w-6 md:h-6 relative transform group-hover:scale-110 transition-transform duration-300" 
-                                    color={language?.color} 
-                                  />
+                                  {/* Icon container */}
+                                  <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-700/50 rounded-xl border border-gray-200/80 dark:border-gray-700/80 shadow-sm overflow-hidden group-hover:border-indigo-200/50 dark:group-hover:border-indigo-700/50 transition-colors duration-300">
+                                    <div className="absolute inset-0 bg-gradient-to-br opacity-20 transition-opacity duration-300 group-hover:opacity-30"
+                                      style={{ background: `linear-gradient(135deg, ${language?.color}20, transparent)` }}
+                                    ></div>
+                                    <IconComponent className="w-5 h-5 md:w-6 md:h-6 relative transform group-hover:scale-110 transition-transform duration-300" 
+                                      color={language?.color} 
+                                    />
+                                  </div>
                                 </div>
+                              ) : (
+                                <div className="relative w-10 h-10 md:w-12 md:h-12 mr-3">
+                                  <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-700/50 rounded-xl border border-gray-200/80 dark:border-gray-700/80 shadow-sm group-hover:border-indigo-200/50 dark:group-hover:border-indigo-700/50 transition-colors duration-300">
+                                    <FiCode className="w-5 h-5 md:w-6 md:h-6 text-gray-500 dark:text-gray-400 transform group-hover:scale-110 transition-transform duration-300" />
+                                  </div>
+                                </div>
+                              )}
+                              <div>
+                                <h3 className="font-semibold text-gray-900 dark:text-white transition-colors text-sm md:text-base group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                                  {room.name}
+                                </h3>
+                                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 transition-colors">
+                                  {getLanguageDisplayName(room.language)}
+                                </p>
                               </div>
-                            ) : (
-                              <div className="relative w-10 h-10 md:w-12 md:h-12 mr-3">
-                                <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-700/50 rounded-xl border border-gray-200/80 dark:border-gray-700/80 shadow-sm group-hover:border-indigo-200/50 dark:group-hover:border-indigo-700/50 transition-colors duration-300">
-                                  <FiCode className="w-5 h-5 md:w-6 md:h-6 text-gray-500 dark:text-gray-400 transform group-hover:scale-110 transition-transform duration-300" />
-                                </div>
+                            </div>
+                            
+                            <div className="flex items-center">
+                              <span className="text-xs font-medium bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 text-indigo-600 dark:text-indigo-400 py-0.5 px-2 md:py-1 md:px-2.5 rounded-full transition-colors">
+                                {room.code}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Subtle gradient divider */}
+                          <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent opacity-50 group-hover:via-indigo-200 dark:group-hover:via-indigo-700 transition-colors duration-300"></div>
+                          
+                          <div className="flex items-center justify-between px-1 mt-2">
+                            {/* Active users status */}
+                            <div className={`flex items-center text-xs rounded-full px-2 py-0.5 ${
+                              activeCollaborators > 0 
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                            }`}>
+                              <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                                activeCollaborators > 0 
+                                  ? 'bg-green-500 dark:bg-green-400 animate-pulse' 
+                                  : 'bg-gray-400 dark:bg-gray-600'
+                              }`}></div>
+                              <span className="font-medium">
+                                {activeCollaborators > 0 
+                                  ? `${activeCollaborators} active` 
+                                  : "No users"}
+                              </span>
+                            </div>
+                            
+                            {/* Last edited time */}
+                            {timeAgo && (
+                              <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                <FiClock className="w-3.5 h-3.5 mr-1" />
+                                <span>Edited {timeAgo}</span>
                               </div>
                             )}
-                            <div>
-                              <h3 className="font-semibold text-gray-900 dark:text-white transition-colors text-sm md:text-base group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                                {room.name}
-                              </h3>
-                              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 transition-colors">
-                                {getLanguageDisplayName(room.language)}
-                              </p>
+                            
+                            {/* Open button with arrow effect */}
+                            <div className="flex items-center text-indigo-600 dark:text-indigo-400 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 rounded-full px-2.5 py-0.5 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all group">
+                              <span>Open</span>
+                              <span className="ml-1 transform transition-transform group-hover:translate-x-0.5">→</span>
                             </div>
                           </div>
-                          
-                          <div className="flex items-center">
-                            <span className="text-xs font-medium bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 text-indigo-600 dark:text-indigo-400 py-0.5 px-2 md:py-1 md:px-2.5 rounded-full transition-colors">
-                              {room.code}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Subtle gradient divider */}
-                        <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent opacity-50 group-hover:via-indigo-200 dark:group-hover:via-indigo-700 transition-colors duration-300"></div>
-                        
-                        <div className="flex items-center justify-between px-1 mt-2">
-                          {/* Active users status */}
-                          <div className={`flex items-center text-xs rounded-full px-2 py-0.5 ${
-                            activeCollaborators > 0 
-                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                          }`}>
-                            <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                              activeCollaborators > 0 
-                                ? 'bg-green-500 dark:bg-green-400 animate-pulse' 
-                                : 'bg-gray-400 dark:bg-gray-600'
-                            }`}></div>
-                            <span className="font-medium">
-                              {activeCollaborators > 0 
-                                ? `${activeCollaborators} active` 
-                                : "No users"}
-                            </span>
-                          </div>
-                          
-                          {/* Last edited time */}
-                          {timeAgo && (
-                            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                              <FiClock className="w-3.5 h-3.5 mr-1" />
-                              <span>Edited {timeAgo}</span>
-                            </div>
-                          )}
-                          
-                          {/* Open button with arrow effect */}
-                          <div className="flex items-center text-indigo-600 dark:text-indigo-400 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 rounded-full px-2.5 py-0.5 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all group">
-                            <span>Open</span>
-                            <span className="ml-1 transform transition-transform group-hover:translate-x-0.5">→</span>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             ) : (
