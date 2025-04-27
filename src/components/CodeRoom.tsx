@@ -82,15 +82,13 @@ export default function CodeRoom() {
   }, []);
   
   const handleCreateRoom = useCallback(async () => {
-    if (!newRoomName.trim()) {
-      toast.error("Room name cannot be empty");
-      return;
-    }
+    // Use "Untitled Room" if name is empty, otherwise use uppercase trimmed name
+    const roomName = newRoomName.trim() ? newRoomName.trim().toUpperCase() : "UNTITLED ROOM";
     
     setIsLoading(true);
     try {
       const result = await createRoom({ 
-        name: newRoomName.trim(), 
+        name: roomName,
         language: newRoomLanguage 
       });
       
@@ -158,7 +156,7 @@ export default function CodeRoom() {
                   id="roomName"
                   type="text"
                   value={newRoomName}
-                  onChange={(e) => setNewRoomName(e.target.value)}
+                  onChange={(e) => setNewRoomName(e.target.value.toUpperCase())}
                   placeholder="Enter room name"
                   className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-3 py-1.5 xs:py-2 sm:py-2.5 text-sm xs:text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-colors"
                   disabled={isLoading}
@@ -381,7 +379,7 @@ export default function CodeRoom() {
                       <button
                         key={room._id}
                         onClick={() => void handleSelectRoom(room.code)}
-                        className="group w-full text-left p-4 md:p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-indigo-50/50 hover:to-purple-50/50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] flex flex-col relative overflow-hidden"
+                        className="group w-full text-left p-3 md:p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-indigo-50/50 hover:to-purple-50/50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] flex flex-col relative overflow-hidden"
                         style={{ 
                           transitionDelay: `${50 * (index % 10)}ms`,
                           opacity: mounted ? 1 : 0,
@@ -391,10 +389,10 @@ export default function CodeRoom() {
                         {/* Decorative gradient background that shows on hover */}
                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 dark:from-indigo-500/10 dark:via-purple-500/10 dark:to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         
-                        <div className="flex justify-between items-start mb-3 relative">
+                        <div className="flex justify-between items-start mb-2 relative">
                           <div className="flex items-center">
                             {IconComponent ? (
-                              <div className="relative w-12 h-12 md:w-14 md:h-14 mr-3">
+                              <div className="relative w-10 h-10 md:w-12 md:h-12 mr-3">
                                 {/* Background blur effect */}
                                 <div className="absolute inset-0 bg-gradient-to-br rounded-xl blur-xl opacity-30"
                                   style={{ background: `linear-gradient(135deg, ${language?.color}40, transparent)` }}
@@ -404,30 +402,30 @@ export default function CodeRoom() {
                                   <div className="absolute inset-0 bg-gradient-to-br opacity-20 transition-opacity duration-300 group-hover:opacity-30"
                                     style={{ background: `linear-gradient(135deg, ${language?.color}20, transparent)` }}
                                   ></div>
-                                  <IconComponent className="w-6 h-6 md:w-7 md:h-7 relative transform group-hover:scale-110 transition-transform duration-300" 
+                                  <IconComponent className="w-5 h-5 md:w-6 md:h-6 relative transform group-hover:scale-110 transition-transform duration-300" 
                                     color={language?.color} 
                                   />
                                 </div>
                               </div>
                             ) : (
-                              <div className="relative w-12 h-12 md:w-14 md:h-14 mr-3">
+                              <div className="relative w-10 h-10 md:w-12 md:h-12 mr-3">
                                 <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-700/50 rounded-xl border border-gray-200/80 dark:border-gray-700/80 shadow-sm group-hover:border-indigo-200/50 dark:group-hover:border-indigo-700/50 transition-colors duration-300">
-                                  <FiCode className="w-6 h-6 md:w-7 md:h-7 text-gray-500 dark:text-gray-400 transform group-hover:scale-110 transition-transform duration-300" />
+                                  <FiCode className="w-5 h-5 md:w-6 md:h-6 text-gray-500 dark:text-gray-400 transform group-hover:scale-110 transition-transform duration-300" />
                                 </div>
                               </div>
                             )}
                             <div>
-                              <h3 className="font-semibold text-gray-900 dark:text-white transition-colors text-base md:text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                              <h3 className="font-semibold text-gray-900 dark:text-white transition-colors text-sm md:text-base group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
                                 {room.name}
                               </h3>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 transition-colors">
+                              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 transition-colors">
                                 {getLanguageDisplayName(room.language)}
                               </p>
                             </div>
                           </div>
                           
                           <div className="flex items-center">
-                            <span className="text-xs font-medium bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 text-indigo-600 dark:text-indigo-400 py-1 px-2 md:py-1.5 md:px-3 rounded-full transition-colors">
+                            <span className="text-xs font-medium bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 text-indigo-600 dark:text-indigo-400 py-0.5 px-2 md:py-1 md:px-2.5 rounded-full transition-colors">
                               {room.code}
                             </span>
                           </div>
@@ -436,7 +434,7 @@ export default function CodeRoom() {
                         {/* Subtle gradient divider */}
                         <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent opacity-50 group-hover:via-indigo-200 dark:group-hover:via-indigo-700 transition-colors duration-300"></div>
                         
-                        <div className="flex items-center justify-between px-1 mt-3">
+                        <div className="flex items-center justify-between px-1 mt-2">
                           {/* Active users status */}
                           <div className={`flex items-center text-xs rounded-full px-2 py-0.5 ${
                             activeCollaborators > 0 
@@ -464,7 +462,7 @@ export default function CodeRoom() {
                           )}
                           
                           {/* Open button with arrow effect */}
-                          <div className="flex items-center text-indigo-600 dark:text-indigo-400 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 rounded-full px-2.5 py-1 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all group">
+                          <div className="flex items-center text-indigo-600 dark:text-indigo-400 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 rounded-full px-2.5 py-0.5 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all group">
                             <span>Open</span>
                             <span className="ml-1 transform transition-transform group-hover:translate-x-0.5">→</span>
                           </div>
