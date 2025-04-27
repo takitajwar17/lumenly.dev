@@ -42,7 +42,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const rooms = useQuery(api.rooms.list);
-  const room = useQuery(
+  const workspace = useQuery(
     api.rooms.get,
     selectedRoomId ? { roomId: selectedRoomId } : "skip"
   );
@@ -115,21 +115,21 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     setPreviousPresence(presence);
   }, [presence]);
   
-  // Set code when room changes
+  // Set code when workspace changes
   useEffect(() => {
-    if (room) {
-      const newCode = room.content || room.code || "";
+    if (workspace) {
+      const newCode = workspace.content || workspace.code || "";
       setCode(newCode);
       setLocalCode(newCode);
       setLastSaved(new Date()); // Set initial save time
     }
-  }, [room]);
+  }, [workspace]);
   
-  // Handle room leaving - this is crucial for cleaning up presence
+  // Handle workspace leaving - this is crucial for cleaning up presence
   useEffect(() => {
     if (!selectedRoomId) return;
 
-    // Function to handle room leaving
+    // Function to handle workspace leaving
     const handleLeaveRoom = () => {
       if (selectedRoomId) {
         void leaveRoom({ roomId: selectedRoomId });
@@ -158,13 +158,13 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     }
   }, [selectedRoomId, leaveRoom, onBack]);
   
-  // Redirect if room not found
+  // Redirect if workspace not found
   useEffect(() => {
-    if (selectedRoomId && !isLoading && room === null) {
-      toast.error("Room not found");
-      void navigate('/room');
+    if (selectedRoomId && !isLoading && workspace === null) {
+      toast.error("Workspace not found");
+      void navigate('/workspace');
     }
-  }, [selectedRoomId, room, isLoading, navigate]);
+  }, [selectedRoomId, workspace, isLoading, navigate]);
   
   // Debounced server update function
   const debouncedUpdateCode = useMemo(
@@ -438,11 +438,11 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
   }), []);
 
   const handleRunCode = useCallback(async () => {
-    if (!code || !room) return;
+    if (!code || !workspace) return;
     setIsRunningCode(true);
     setActiveTab('output');
     try {
-      const result = await executeCode({ language: room.language, code });
+      const result = await executeCode({ language: workspace.language, code });
       setOutput(result.run.output);
       setExecutionTimestamp(new Date());
       setExecutionTime(result.run.time);
@@ -452,14 +452,14 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     } finally {
       setIsRunningCode(false);
     }
-  }, [code, executeCode, room]);
+  }, [code, executeCode, workspace]);
 
   const handleAIAssist = useCallback(async () => {
-    if (!code || !room) return;
+    if (!code || !workspace) return;
     setIsGettingReview(true);
     setActiveTab('review');
     try {
-      const response = await getAIAssistance({ code, language: room.language });
+      const response = await getAIAssistance({ code, language: workspace.language });
       // The response is already a JSON string from the backend
       setReview(JSON.parse(response));
     } catch (error) {
@@ -468,11 +468,11 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     } finally {
       setIsGettingReview(false);
     }
-  }, [code, getAIAssistance, room]);
+  }, [code, getAIAssistance, workspace]);
   
   const handleSelectRoom = useCallback((roomCode: string) => {
     if (roomCode) {
-      void navigate(`/room/${roomCode}`);
+      void navigate(`/workspace/${roomCode}`);
     }
   }, [navigate]);
 
@@ -496,7 +496,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
   }, [debouncedUpdateCode]);
 
   const handleLanguageChange = useCallback(async (language: string) => {
-    if (!selectedRoomId || !room || room.language === language) return;
+    if (!selectedRoomId || !workspace || workspace.language === language) return;
     
     setIsUpdatingLanguage(true);
     try {
@@ -508,7 +508,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     } finally {
       setIsUpdatingLanguage(false);
     }
-  }, [selectedRoomId, room, updateLanguage]);
+  }, [selectedRoomId, workspace, updateLanguage]);
 
   // Non-promise wrapper
   const handleDetectedLanguage = useCallback((language: string) => {
@@ -519,7 +519,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     setActivityLog([]);
   }, []);
 
-  if (isLoading && !room) {
+  if (isLoading && !workspace) {
     return (
       <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-900 transition-colors">
         <div className="text-center">
@@ -528,7 +528,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
             <div className="absolute inset-3 rounded-full border-t-2 border-b-2 border-indigo-400 animate-spin-reverse" style={{ animationDuration: '1.5s' }}></div>
             <div className="absolute inset-6 rounded-full border-t-2 border-indigo-300 animate-spin" style={{ animationDuration: '2s' }}></div>
           </div>
-          <p className="text-lg font-medium text-gray-800 dark:text-gray-200 transition-colors">Loading room...</p>
+          <p className="text-lg font-medium text-gray-800 dark:text-gray-200 transition-colors">Loading workspace...</p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">Please wait</p>
         </div>
       </div>
@@ -537,7 +537,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
 
   return (
     <div className="w-full h-full flex overflow-hidden bg-white dark:bg-gray-900 transition-colors">
-      {/* Left Sidebar - Room List */}
+      {/* Left Sidebar - Workspace List */}
       <div className="w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-colors">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 transition-colors">
           <button
@@ -549,13 +549,13 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
           </button>
         </div>
         
-        {room && (
+        {workspace && (
           <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/10 border-b border-indigo-100 dark:border-indigo-900/20 transition-colors">
             <div className="text-center">
-              <p className="text-sm font-medium text-indigo-700 dark:text-indigo-400 mb-1.5 transition-colors">Room Code</p>
+              <p className="text-sm font-medium text-indigo-700 dark:text-indigo-400 mb-1.5 transition-colors">Workspace Code</p>
               <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 px-3 py-2 transition-colors">
                 <p className="text-xl tracking-wider font-mono font-semibold text-indigo-600 dark:text-indigo-400 transition-colors">
-                  {room.code}
+                  {workspace.code}
                 </p>
               </div>
               <p className="text-xs text-indigo-600/70 dark:text-indigo-400/70 mt-2 transition-colors">Share this code with collaborators</p>
@@ -565,27 +565,27 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
         
         <div className="flex-1 overflow-auto">
           <div className="p-4">
-            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 transition-colors">Your Past Rooms</h3>
+            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 transition-colors">Your Past Workspaces</h3>
             <div className="space-y-2">
-              {rooms?.map((room) => (
+              {rooms?.map((workspace) => (
                 <button
-                  key={room._id}
-                  onClick={() => void handleSelectRoom(room.code)}
+                  key={workspace._id}
+                  onClick={() => void handleSelectRoom(workspace.code)}
                   className={`w-full text-left p-3 rounded-lg transition-all ${
-                    selectedRoomId === room._id
+                    selectedRoomId === workspace._id
                       ? "bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-200 dark:border-indigo-700"
                       : "hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-gray-200 dark:border-gray-700"
                   }`}
                 >
                   <span className={`block font-medium truncate ${
-                    selectedRoomId === room._id ? "text-indigo-700 dark:text-indigo-400" : "text-gray-700 dark:text-gray-300"
+                    selectedRoomId === workspace._id ? "text-indigo-700 dark:text-indigo-400" : "text-gray-700 dark:text-gray-300"
                   } transition-colors`}>
-                    {room.name}
+                    {workspace.name}
                   </span>
                   <span className={`block text-xs mt-0.5 ${
-                    selectedRoomId === room._id ? "text-indigo-500 dark:text-indigo-300" : "text-gray-500 dark:text-gray-400"
+                    selectedRoomId === workspace._id ? "text-indigo-500 dark:text-indigo-300" : "text-gray-500 dark:text-gray-400"
                   } transition-colors`}>
-                    {room.language}
+                    {workspace.language}
                   </span>
                 </button>
               ))}
@@ -596,11 +596,11 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col relative">
-        {selectedRoomId && room ? (
+        {selectedRoomId && workspace ? (
           <>
             {/* Header with toolbar */}
             <EditorToolbar 
-              room={room}
+              workspace={workspace}
               activeTab={activeTab}
               isRunningCode={isRunningCode}
               isGettingReview={isGettingReview}
@@ -623,8 +623,8 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
                 <div className="absolute inset-0">
                   <Editor
                     height="100%"
-                    defaultLanguage={room.language || "javascript"}
-                    language={room.language || "javascript"}
+                    defaultLanguage={workspace.language || "javascript"}
+                    language={workspace.language || "javascript"}
                     value={localCode}
                     onChange={handleEditorChange}
                     theme={theme === 'dark' ? 'vs-dark' : 'light'}
@@ -673,7 +673,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
                     output={output}
                     executionTimestamp={executionTimestamp}
                     executionTime={executionTime}
-                    language={room.language}
+                    language={workspace.language}
                   />
                 </div>
               )}
@@ -692,7 +692,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
                       <div className="absolute inset-2 rounded-full border-t-2 border-b-2 border-indigo-400 dark:border-indigo-300 animate-spin-reverse"></div>
                       <div className="absolute inset-4 rounded-full border-t-2 border-b-2 border-indigo-300 dark:border-indigo-200 animate-spin"></div>
                     </div>
-                    <p className="text-lg font-medium text-gray-900 dark:text-white transition-colors">Loading room...</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-white transition-colors">Loading workspace...</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">Please wait</p>
                   </div>
                 </div>
@@ -703,7 +703,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
                 activeTab={activeTab}
                 cursorPosition={cursorPosition}
                 wordCount={wordCount}
-                language={room.language}
+                language={workspace.language}
                 lastSaved={lastSaved}
                 executionTimestamp={executionTimestamp}
                 executionTime={executionTime}
@@ -717,9 +717,9 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
               <svg className="w-16 h-16 mx-auto mb-6 text-gray-400 dark:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 transition-colors">Select a Room</h3>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 transition-colors">Select a Workspace</h3>
               <p className="text-gray-600 dark:text-gray-400 transition-colors">
-                Choose a room from the sidebar to start coding or create a new one from the main menu
+                Choose a workspace from the sidebar to start coding or create a new one from the main menu
               </p>
             </div>
           </div>

@@ -117,10 +117,10 @@ export default function AppContent() {
         <main className="flex-1 flex overflow-hidden w-full">
           <Authenticated>
             <Routes>
-              <Route path="/" element={<Navigate to="/room" replace />} />
-              <Route path="/room" element={<div className="w-full h-full"><CodeRoom /></div>} />
-              <Route path="/room/:roomCode" element={<div className="w-full h-full"><RoomRouteHandler /></div>} />
-              <Route path="*" element={<Navigate to="/room" replace />} />
+              <Route path="/" element={<Navigate to="/workspace" replace />} />
+              <Route path="/workspace" element={<div className="w-full h-full"><CodeRoom /></div>} />
+              <Route path="/workspace/:roomCode" element={<div className="w-full h-full"><RoomRouteHandler /></div>} />
+              <Route path="*" element={<Navigate to="/workspace" replace />} />
             </Routes>
           </Authenticated>
           <Unauthenticated>
@@ -156,7 +156,7 @@ export default function AppContent() {
                   
                   {/* Tagline with refined typography */}
                   <p className="text-base sm:text-lg md:text-xl text-gray-600/90 dark:text-gray-300/90 font-light transition-colors tracking-wide">
-                    Collaborative coding, <span className="inline-block italic font-normal bg-gradient-to-br from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">reimagined</span>
+                    Code together, <span className="inline-block italic font-normal bg-gradient-to-br from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">instantly with AI</span>
                   </p>
                 </div>
                 

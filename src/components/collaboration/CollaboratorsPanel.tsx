@@ -102,7 +102,7 @@ export default function CollaboratorsPanel({
             <FiUsers className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600 transition-colors" />
             <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors">No active collaborators</p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 transition-colors">
-              Share the room code to invite others
+              Share the workspace code to invite others
             </p>
           </div>
         )}

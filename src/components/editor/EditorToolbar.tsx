@@ -21,7 +21,7 @@ interface UserPresence {
 }
 
 interface EditorToolbarProps {
-  room: Doc<"rooms">;
+  workspace: Doc<"rooms">;
   activeTab: string;
   isRunningCode: boolean;
   isGettingReview: boolean;
@@ -39,7 +39,7 @@ interface EditorToolbarProps {
 }
 
 export default function EditorToolbar({
-  room,
+  workspace,
   activeTab,
   isRunningCode,
   isGettingReview,
@@ -57,7 +57,7 @@ export default function EditorToolbar({
 }: EditorToolbarProps) {
   const [isConfirmClearModalOpen, setIsConfirmClearModalOpen] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
-  const [editedName, setEditedName] = useState(room.name);
+  const [editedName, setEditedName] = useState(workspace.name);
   const editInputRef = useRef<HTMLInputElement>(null);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -73,35 +73,35 @@ export default function EditorToolbar({
   }, [isEditingName]);
 
   const handleStartEditing = () => {
-    setEditedName(room.name);
+    setEditedName(workspace.name);
     setIsEditingName(true);
   };
 
   const handleSaveName = async () => {
     const newName = editedName.trim().toUpperCase();
     if (!newName) {
-      setEditedName(room.name);
+      setEditedName(workspace.name);
       setIsEditingName(false);
       return;
     }
 
-    if (newName !== room.name) {
+    if (newName !== workspace.name) {
       try {
         await updateRoomName({
-          roomId: room._id,
+          roomId: workspace._id,
           name: newName
         });
-        toast.success("Room name updated");
+        toast.success("Workspace name updated");
       } catch (error) {
-        toast.error("Failed to update room name");
-        setEditedName(room.name);
+        toast.error("Failed to update workspace name");
+        setEditedName(workspace.name);
       }
     }
     setIsEditingName(false);
   };
 
   const handleCancelEdit = () => {
-    setEditedName(room.name);
+    setEditedName(workspace.name);
     setIsEditingName(false);
   };
 
@@ -172,7 +172,7 @@ export default function EditorToolbar({
               className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'} cursor-pointer hover:text-indigo-500 transition-colors`}
               onClick={handleStartEditing}
             >
-              {room.name}
+              {workspace.name}
             </h2>
           )}
           
@@ -182,7 +182,7 @@ export default function EditorToolbar({
             <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Language:</span>
             <div className="flex items-center">
               <span className={`text-sm font-medium px-2 py-1 rounded-md ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>
-                {room.language}
+                {workspace.language}
               </span>
               {isUpdatingLanguage && (
                 <div className="ml-2 w-4 h-4 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin"></div>

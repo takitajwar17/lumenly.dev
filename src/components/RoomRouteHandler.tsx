@@ -7,8 +7,8 @@ import { toast } from "sonner";
 import CodeEditor from "./CodeEditor";
 
 /**
- * Component to handle the room/:roomCode route
- * Manages room joining and validation
+ * Component to handle the workspace/:roomCode route
+ * Manages workspace joining and validation
  */
 export default function RoomRouteHandler() {
   const { roomCode } = useParams<{ roomCode: string }>();
@@ -19,11 +19,11 @@ export default function RoomRouteHandler() {
   const joinRoomByCode = useMutation(api.rooms.joinByCode);
   const leaveRoom = useMutation(api.rooms.leaveRoom);
   
-  // Load room by code
+  // Load workspace by code
   useEffect(() => {
     async function loadRoom() {
       if (!roomCode) {
-        void navigate('/room');
+        void navigate('/workspace');
         return;
       }
       
@@ -32,8 +32,8 @@ export default function RoomRouteHandler() {
         const roomId = await joinRoomByCode({ code: roomCode });
         setRoomId(roomId);
       } catch (error) {
-        toast.error("Invalid room code or room not found");
-        void navigate('/room');
+        toast.error("Invalid workspace code or workspace not found");
+        void navigate('/workspace');
       } finally {
         setIsLoading(false);
       }
@@ -42,15 +42,15 @@ export default function RoomRouteHandler() {
     void loadRoom();
   }, [roomCode, joinRoomByCode, navigate]);
   
-  // Handle navigation back to /room
+  // Handle navigation back to /workspace
   const handleBack = useCallback(() => {
-    // If we have a room ID, make sure to leave it first
+    // If we have a workspace ID, make sure to leave it first
     if (roomId) {
       void leaveRoom({ roomId }).then(() => {
-        void navigate('/room');
+        void navigate('/workspace');
       });
     } else {
-      void navigate('/room');
+      void navigate('/workspace');
     }
   }, [navigate, roomId, leaveRoom]);
   
@@ -63,7 +63,7 @@ export default function RoomRouteHandler() {
             <div className="absolute inset-3 rounded-full border-t-2 border-b-2 border-indigo-400 animate-spin-reverse" style={{ animationDuration: '1.5s' }}></div>
             <div className="absolute inset-6 rounded-full border-t-2 border-indigo-300 animate-spin" style={{ animationDuration: '2s' }}></div>
           </div>
-          <p className="text-lg font-medium text-gray-800 dark:text-gray-200 transition-colors">Loading room...</p>
+          <p className="text-lg font-medium text-gray-800 dark:text-gray-200 transition-colors">Loading workspace...</p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">Connecting to {roomCode}</p>
         </div>
       </div>

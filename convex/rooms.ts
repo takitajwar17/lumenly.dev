@@ -26,7 +26,7 @@ export const create = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    // Generate a unique code for the room
+    // Generate a unique code for the workspace
     let isUnique = false;
     let roomCode = '';
     
@@ -73,10 +73,10 @@ export const get = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    const room = await ctx.db.get(args.roomId);
-    if (!room) return null;
+    const workspace = await ctx.db.get(args.roomId);
+    if (!workspace) return null;
 
-    return room;
+    return workspace;
   },
 });
 
@@ -88,27 +88,27 @@ export const joinByCode = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    // Find the room with this code
-    const room = await ctx.db
+    // Find the workspace with this code
+    const workspace = await ctx.db
       .query("rooms")
       .filter((q) => q.eq(q.field("code"), args.code))
       .first();
     
-    if (!room) {
-      throw new Error("Invalid room code");
+    if (!workspace) {
+      throw new Error("Invalid workspace code");
     }
 
-    // Check if user already has a session for this room
+    // Check if user already has a session for this workspace
     const existingSession = await ctx.db
       .query("sessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("roomId"), room._id))
+      .filter((q) => q.eq(q.field("roomId"), workspace._id))
       .first();
     
     // If no existing session, create one
     if (!existingSession) {
       await ctx.db.insert("sessions", {
-        roomId: room._id,
+        roomId: workspace._id,
         userId,
         lastAccessTime: Date.now(),
       });
@@ -119,7 +119,7 @@ export const joinByCode = mutation({
       });
     }
 
-    return room._id;
+    return workspace._id;
   },
 });
 
@@ -136,12 +136,12 @@ export const list = query({
 
     const rooms = await Promise.all(
       sessions.map(async (session) => {
-        const room = await ctx.db.get(session.roomId);
-        return room;
+        const workspace = await ctx.db.get(session.roomId);
+        return workspace;
       })
     );
 
-    return rooms.filter((room): room is NonNullable<typeof room> => room !== null);
+    return rooms.filter((workspace): workspace is NonNullable<typeof workspace> => workspace !== null);
   },
 });
 
@@ -157,13 +157,13 @@ export const listWithDetails = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
-    // Get room IDs
+    // Get workspace IDs
     const roomIds = sessions.map(session => session.roomId);
     
     // Get all rooms
     const roomsPromises = roomIds.map(async (roomId) => {
-      const room = await ctx.db.get(roomId);
-      if (!room) return null;
+      const workspace = await ctx.db.get(roomId);
+      if (!workspace) return null;
       
       // Get active collaborators (users seen in the last 5 minutes)
       const activePresence = await ctx.db
@@ -172,7 +172,7 @@ export const listWithDetails = query({
         .filter((q) => q.gt(q.field("lastSeenTime"), Date.now() - 5 * 60 * 1000)) // 5 minutes
         .collect();
         
-      // Find sessions for this room to determine last activity
+      // Find sessions for this workspace to determine last activity
       const roomSessions = await ctx.db
         .query("sessions")
         .filter((q) => q.eq(q.field("roomId"), roomId))
@@ -183,7 +183,7 @@ export const listWithDetails = query({
       const lastEdited = lastAccessTimes.length > 0 ? Math.max(...lastAccessTimes) : null;
       
       return {
-        room,
+        workspace,
         activeCollaborators: activePresence.length,
         lastEdited
       };
@@ -203,7 +203,7 @@ export const updateCode = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    // Only update the content field, not the code field (room identifier)
+    // Only update the content field, not the code field (workspace identifier)
     await ctx.db.patch(args.roomId, {
       content: args.code,
     });
@@ -345,9 +345,9 @@ export const updateLanguage = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    // Verify the room exists and user has access
-    const room = await ctx.db.get(args.roomId);
-    if (!room) throw new Error("Room not found");
+    // Verify the workspace exists and user has access
+    const workspace = await ctx.db.get(args.roomId);
+    if (!workspace) throw new Error("Workspace not found");
 
     // Update the language field
     await ctx.db.patch(args.roomId, {
@@ -366,7 +366,7 @@ export const leaveRoom = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    // Find user's presence in the room
+    // Find user's presence in the workspace
     const presence = await ctx.db
       .query("presence")
       .withIndex("by_room", (q) => q.eq("roomId", args.roomId))
@@ -391,11 +391,11 @@ export const updateRoomName = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    // Verify the room exists
-    const room = await ctx.db.get(args.roomId);
-    if (!room) throw new Error("Room not found");
+    // Verify the workspace exists
+    const workspace = await ctx.db.get(args.roomId);
+    if (!workspace) throw new Error("Workspace not found");
 
-    // Update the room name
+    // Update the workspace name
     await ctx.db.patch(args.roomId, {
       name: args.name,
     });

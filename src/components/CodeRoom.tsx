@@ -56,9 +56,10 @@ const styles = `
 `;
 
 /**
- * Component for room listing, creation and joining
+ * Component for workspace listing, creation and joining.
+ * Allows users to create new workspaces or join existing ones for real-time code collaboration.
  */
-export default function CodeRoom() {
+export default function WorkspaceHub() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
   const [newRoomLanguage, setNewRoomLanguage] = useState("javascript");
@@ -72,7 +73,7 @@ export default function CodeRoom() {
   const createRoom = useMutation(api.rooms.create);
   const joinRoomByCode = useMutation(api.rooms.joinByCode);
   
-  // Get active collaborators for each room
+  // Get active collaborators for each workspace
   const roomsWithPresence = useQuery(api.rooms.listWithDetails) || [];
   
   const { theme } = useTheme();
@@ -104,8 +105,8 @@ export default function CodeRoom() {
   }, []);
   
   const handleCreateRoom = useCallback(async () => {
-    // Use "Untitled Room" if name is empty, otherwise use uppercase trimmed name
-    const roomName = newRoomName.trim() ? newRoomName.trim().toUpperCase() : "UNTITLED ROOM";
+    // Use "Untitled Workspace" if name is empty, otherwise use uppercase trimmed name
+    const roomName = newRoomName.trim() ? newRoomName.trim().toUpperCase() : "UNTITLED WORKSPACE";
     
     setIsLoading(true);
     try {
@@ -114,13 +115,13 @@ export default function CodeRoom() {
         language: newRoomLanguage 
       });
       
-      // Navigate directly to the room using the returned code
-      void navigate(`/room/${result.code}`);
+      // Navigate directly to the workspace using the returned code
+      void navigate(`/workspace/${result.code}`);
       
       setIsCreateModalOpen(false);
-      toast.success("Room created successfully!");
+      toast.success("Workspace created successfully!");
     } catch (_error) {
-      toast.error("Failed to create room");
+      toast.error("Failed to create workspace");
     } finally {
       setIsLoading(false);
     }
@@ -128,34 +129,34 @@ export default function CodeRoom() {
   
   const handleJoinRoom = useCallback(async () => {
     if (joinCode.length !== 6) {
-      toast.error("Room code should be 6 characters");
+      toast.error("Workspace code should be 6 characters");
       return;
     }
     
     setIsLoading(true);
     try {
-      // Just validate that the room exists
+      // Just validate that the workspace exists
       await joinRoomByCode({ code: joinCode });
       
-      // Navigate to the room
-      void navigate(`/room/${joinCode}`);
+      // Navigate to the workspace
+      void navigate(`/workspace/${joinCode}`);
       
-      toast.success("Joined room successfully!");
+      toast.success("Joined workspace successfully!");
     } catch (_error) {
-      toast.error("Failed to join room. Invalid code.");
+      toast.error("Failed to join workspace. Invalid code.");
       setIsLoading(false);
     }
   }, [joinCode, joinRoomByCode, navigate]);
   
   const handleSelectRoom = useCallback((roomCode: string) => {
     if (roomCode) {
-      void navigate(`/room/${roomCode}`);
+      void navigate(`/workspace/${roomCode}`);
     }
   }, [navigate]);
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors bg-noise">
-      {/* Create Room Modal */}
+      {/* Create Workspace Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
           <div className={`bg-white dark:bg-gray-800 rounded-xl p-3 xs:p-4 sm:p-6 w-full max-w-[340px] sm:max-w-md shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 transform ${mounted ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-4 opacity-0 scale-95'}`}>
@@ -165,21 +166,21 @@ export default function CodeRoom() {
                 <div className="mr-2 xs:mr-2 sm:mr-3 w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 dark:from-indigo-400 dark:to-purple-400 flex items-center justify-center shadow-md">
                   <FiPlus className="text-white w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
                 </div>
-                Create New Room
+                Create New Workspace
               </h2>
             </div>
             
             <div className="space-y-3 xs:space-y-4 sm:space-y-5">
               <div>
                 <label htmlFor="roomName" className="block text-xs xs:text-sm sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 xs:mb-2 sm:mb-2 transition-colors">
-                  Room Name
+                  Workspace Name
                 </label>
                 <input
                   id="roomName"
                   type="text"
                   value={newRoomName}
                   onChange={(e) => setNewRoomName(e.target.value.toUpperCase().slice(0, 30))}
-                  placeholder="Enter room name"
+                  placeholder="Enter workspace name"
                   maxLength={30}
                   className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-3 py-1.5 xs:py-2 sm:py-2.5 text-sm xs:text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-colors"
                   disabled={isLoading}
@@ -189,7 +190,7 @@ export default function CodeRoom() {
               
               <div>
                 <label className="block text-xs xs:text-sm sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 xs:mb-2 sm:mb-2 transition-colors">
-                  Programming Language
+                  Choose Your Language
                 </label>
                 
                 {!showAllLanguages ? (
@@ -266,7 +267,7 @@ export default function CodeRoom() {
                 className="px-2.5 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 dark:from-indigo-500 dark:to-purple-500 dark:hover:from-indigo-400 dark:hover:to-purple-400 text-white rounded-lg font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed text-xs xs:text-sm sm:text-base"
                 disabled={isLoading}
               >
-                {isLoading ? 'Creating...' : 'Create Room'}
+                {isLoading ? 'Creating...' : 'Create Workspace'}
               </button>
             </div>
           </div>
@@ -295,8 +296,8 @@ export default function CodeRoom() {
             
             <h1 className="text-2xl md:text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-2 md:mb-3 transition-colors relative">
               <span className="relative">
-                <span className="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-300 bg-clip-text text-transparent">Collaborative Coding</span>
-                <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-300 bg-clip-text text-transparent blur-[2px] opacity-30 -z-10 translate-y-[1px] translate-x-[0.5px]">Collaborative Coding</span>
+                <span className="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-300 bg-clip-text text-transparent">Real-time Collaboration</span>
+                <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-300 bg-clip-text text-transparent blur-[2px] opacity-30 -z-10 translate-y-[1px] translate-x-[0.5px]">Real-time Collaboration</span>
               </span>
             </h1>
             
@@ -307,7 +308,7 @@ export default function CodeRoom() {
             </div>
             
             <p className="text-gray-600 dark:text-gray-400 transition-colors text-sm md:text-base">
-              Create or join a room to start coding <span className="inline-block italic font-normal bg-gradient-to-br from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">together</span>
+              Create a workspace to start coding <span className="inline-block italic font-normal bg-gradient-to-br from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">together with AI</span>
             </p>
           </div>
           
@@ -320,7 +321,7 @@ export default function CodeRoom() {
                 <div className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-white/20 flex items-center justify-center mr-2 md:mr-3">
                   <FiPlus className="text-white" />
                 </div>
-                <span>Create a Room</span>
+                <span>Create a Workspace</span>
               </div>
             </button>
             
@@ -344,7 +345,7 @@ export default function CodeRoom() {
                   type="text"
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
-                  placeholder="Enter 6-character room code"
+                  placeholder="Enter 6-character code"
                   className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-xl pl-12 md:pl-14 pr-4 py-3 md:py-3.5 text-center text-xs sm:text-sm md:text-base lg:text-lg tracking-widest uppercase text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-colors shadow-sm"
                   maxLength={6}
                 />
@@ -359,7 +360,7 @@ export default function CodeRoom() {
                   <div className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-white/20 flex items-center justify-center mr-2 md:mr-3">
                     <FiUsers className="text-white" />
                   </div>
-                  <span>{isLoading ? 'Joining...' : 'Join Room'}</span>
+                  <span>{isLoading ? 'Joining...' : 'Join Workspace'}</span>
                 </div>
               </button>
             </div>
@@ -373,7 +374,7 @@ export default function CodeRoom() {
               <div className="mr-2 w-6 h-6 md:w-7 md:h-7 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
                 <FiCode className="text-gray-500 dark:text-gray-400" />
               </div>
-              Your Recent Rooms
+              Your Recent Workspaces
             </h2>
           
             {isLoading ? (
@@ -390,19 +391,19 @@ export default function CodeRoom() {
                 <div className={`h-full overflow-auto transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
                   <div className="space-y-3 pb-4">
                     {roomsWithPresence.map((roomData, index) => {
-                      const { room, activeCollaborators, lastEdited } = roomData;
+                      const { workspace, activeCollaborators, lastEdited } = roomData;
                       
                       // Format time since last edit
                       const timeAgo = lastEdited ? formatTimeAgo(lastEdited) : null;
                       
                       // Find the language icon if available
-                      const language = POPULAR_LANGUAGES.find(lang => lang.id === room.language);
+                      const language = POPULAR_LANGUAGES.find(lang => lang.id === workspace.language);
                       const IconComponent = language?.icon;
                       
                       return (
                         <button
-                          key={room._id}
-                          onClick={() => void handleSelectRoom(room.code)}
+                          key={workspace._id}
+                          onClick={() => void handleSelectRoom(workspace.code)}
                           className="group w-full text-left p-3 md:p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-indigo-50/50 hover:to-purple-50/50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] flex flex-col relative overflow-hidden"
                           style={{ 
                             transitionDelay: `${50 * (index % 10)}ms`,
@@ -440,17 +441,17 @@ export default function CodeRoom() {
                               )}
                               <div>
                                 <h3 className="font-semibold text-gray-900 dark:text-white transition-colors text-sm md:text-base group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                                  {room.name}
+                                  {workspace.name}
                                 </h3>
                                 <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 transition-colors">
-                                  {getLanguageDisplayName(room.language)}
+                                  {getLanguageDisplayName(workspace.language)}
                                 </p>
                               </div>
                             </div>
                             
                             <div className="flex items-center">
                               <span className="text-xs font-medium bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 text-indigo-600 dark:text-indigo-400 py-0.5 px-2 md:py-1 md:px-2.5 rounded-full transition-colors">
-                                {room.code}
+                                {workspace.code}
                               </span>
                             </div>
                           </div>
@@ -505,8 +506,8 @@ export default function CodeRoom() {
                     <FiCode className="w-6 h-6 md:w-8 md:h-8 text-gray-400 dark:text-gray-500" />
                   </div>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 transition-colors font-medium text-sm md:text-base">No recent rooms found</p>
-                <p className="text-xs md:text-sm mt-2 text-gray-500 dark:text-gray-500 transition-colors">Create a new room to get started</p>
+                <p className="text-gray-600 dark:text-gray-400 transition-colors font-medium text-sm md:text-base">No recent workspaces found</p>
+                <p className="text-xs md:text-sm mt-2 text-gray-500 dark:text-gray-500 transition-colors">Create a new workspace to get started</p>
               </div>
             )}
           </div>
