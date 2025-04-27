@@ -668,15 +668,11 @@ export default function WorkspaceHub() {
           
           <div className={`text-center mb-6 md:mb-10 transition-all duration-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
             <div className="flex items-center justify-center mb-4 md:mb-6">
-              <div className="w-16 h-16 md:w-20 md:h-20 relative subtle-rotation">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-500 dark:from-indigo-400 dark:to-purple-400 rounded-full blur-md opacity-20"></div>
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-500 dark:from-indigo-400 dark:to-purple-400 rounded-full overflow-hidden border border-indigo-200 dark:border-indigo-700/50 flex items-center justify-center shadow-lg hover-float">
-                  <FiCode className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                </div>
-                {/* Floating dots decoration */}
-                <div className="absolute w-2 h-2 rounded-full bg-indigo-400 dark:bg-indigo-300 floating-dot" style={{ top: '-4px', right: '2px' }}></div>
-                <div className="absolute w-1.5 h-1.5 rounded-full bg-purple-400 dark:bg-purple-300 floating-dot" style={{ bottom: '0px', left: '2px', animationDelay: '1s' }}></div>
-              </div>
+              <img 
+                src="/apple-touch-icon.png" 
+                alt="Lumenly Logo" 
+                className="w-16 h-16 md:w-20 md:h-20 mb-2 hover-float"
+              />
             </div>
             
             <h1 className="text-2xl md:text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-2 md:mb-3 transition-colors relative">
