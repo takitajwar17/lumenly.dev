@@ -37,29 +37,6 @@ export default function CodeOutput({
           </div>
         )}
       </div>
-      {executionTimestamp && (
-        <div className={`flex items-center justify-between px-6 py-3 ${isDark ? 'bg-gray-800 text-gray-400 border-gray-700' : 'bg-gray-200 text-gray-600 border-gray-300'} text-xs border-t`}>
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Executed at {executionTimestamp.toLocaleTimeString()}</span>
-            </div>
-          {executionTime && (
-              <div className="flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span>Duration: {executionTime}ms</span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center space-x-2">
-            <span>{language}</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 } 

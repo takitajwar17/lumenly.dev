@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { getDefaultCodeForLanguage } from "./codeTemplates";
 
 // Generate a random 6-character code
 function generateUniqueCode(): string {
@@ -63,53 +64,6 @@ export const create = mutation({
     return { roomId, code: roomCode };
   },
 });
-
-// Helper function to get starter code for different languages
-function getDefaultCodeForLanguage(language: string): string {
-  switch (language) {
-    case "javascript":
-      return '// JavaScript code\nconsole.log("Hello, world!");\n\n// Try writing a function\nfunction add(a, b) {\n  return a + b;\n}\n\nconsole.log(add(5, 3));';
-    
-    case "typescript":
-      return '// TypeScript code\nfunction greet(name: string): string {\n  return `Hello, ${name}!`;\n}\n\nconsole.log(greet("World"));';
-    
-    case "python":
-      return '# Python code\nprint("Hello, world!")\n\n# Try writing a function\ndef add(a, b):\n    return a + b\n\nprint(add(5, 3))';
-    
-    case "java":
-      return 'public class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello, world!");\n    \n    // Try calling a method\n    System.out.println("Sum: " + add(5, 3));\n  }\n  \n  public static int add(int a, int b) {\n    return a + b;\n  }\n}';
-    
-    case "c":
-      return '#include <stdio.h>\n\n// Function declaration\nint add(int a, int b);\n\nint main() {\n  printf("Hello, world!\\n");\n  \n  // Call the function\n  printf("Sum: %d\\n", add(5, 3));\n  \n  return 0;\n}\n\n// Function definition\nint add(int a, int b) {\n  return a + b;\n}';
-    
-    case "cpp":
-      return '#include <iostream>\n\nusing namespace std;\n\n// Function declaration\nint add(int a, int b);\n\nint main() {\n  cout << "Hello, world!" << endl;\n  \n  // Call the function\n  cout << "Sum: " << add(5, 3) << endl;\n  \n  return 0;\n}\n\n// Function definition\nint add(int a, int b) {\n  return a + b;\n}';
-    
-    case "csharp":
-      return 'using System;\n\nclass Program {\n  static void Main() {\n    Console.WriteLine("Hello, world!");\n    \n    // Call the method\n    Console.WriteLine($"Sum: {Add(5, 3)}");\n  }\n  \n  static int Add(int a, int b) {\n    return a + b;\n  }\n}';
-    
-    case "php":
-      return '<?php\n\necho "Hello, world!\\n";\n\n// Define a function\nfunction add($a, $b) {\n  return $a + $b;\n}\n\n// Call the function\necho "Sum: " . add(5, 3) . "\\n";\n';
-    
-    case "ruby":
-      return '# Ruby code\nputs "Hello, world!"\n\n# Define a method\ndef add(a, b)\n  a + b\nend\n\n# Call the method\nputs "Sum: #{add(5, 3)}"';
-    
-    case "go":
-      return 'package main\n\nimport "fmt"\n\nfunc add(a, b int) int {\n  return a + b\n}\n\nfunc main() {\n  fmt.Println("Hello, world!")\n  \n  // Call the function\n  fmt.Printf("Sum: %d\\n", add(5, 3))\n}';
-    
-    case "rust":
-      return 'fn add(a: i32, b: i32) -> i32 {\n  a + b\n}\n\nfn main() {\n  println!("Hello, world!");\n  \n  // Call the function\n  println!("Sum: {}", add(5, 3));\n}';
-    
-    case "swift":
-      return '// Swift code\nprint("Hello, world!")\n\n// Define a function\nfunc add(_ a: Int, _ b: Int) -> Int {\n  return a + b\n}\n\n// Call the function\nprint("Sum: \\(add(5, 3))")';
-    
-    case "kotlin":
-      return 'fun add(a: Int, b: Int): Int {\n  return a + b\n}\n\nfun main() {\n  println("Hello, world!")\n  \n  // Call the function\n  println("Sum: ${add(5, 3)}")\n}';
-    
-    default:
-      return '// Write your code here\nconsole.log("Hello, world!");';
-  }
-}
 
 export const get = query({
   args: {

@@ -8,10 +8,17 @@ import {
   SiJavascript, 
   SiTypescript, 
   SiPython,
-  SiCplusplus, 
-  SiSharp 
+  SiCplusplus,
+  SiC,
+  SiSharp,
+  SiGo,
+  SiRust,
+  SiSwift,
+  SiKotlin,
+  SiPhp
 } from "react-icons/si";
 import { FaJava } from "react-icons/fa";
+import { getSupportedLanguages, getLanguageDisplayName } from "../../convex/languageMap";
 
 // Popular programming languages for quick selection
 const POPULAR_LANGUAGES = [
@@ -19,9 +26,21 @@ const POPULAR_LANGUAGES = [
   { id: "typescript", name: "TypeScript", icon: SiTypescript, color: "#3178C6" },
   { id: "python", name: "Python", icon: SiPython, color: "#3776AB" },
   { id: "java", name: "Java", icon: FaJava, color: "#007396" },
-  { id: "cpp", name: "C++", icon: SiCplusplus, color: "#00599C" },
-  { id: "csharp", name: "C#", icon: SiSharp, color: "#239120" },
+  { id: "c++", name: "C++", icon: SiCplusplus, color: "#00599C" },
+  { id: "c", name: "C", icon: SiC, color: "#A8B9CC" },
+  { id: "csharp.net", name: "C#", icon: SiSharp, color: "#239120" },
+  { id: "go", name: "Go", icon: SiGo, color: "#00ADD8" },
+  { id: "rust", name: "Rust", icon: SiRust, color: "#000000" },
+  { id: "swift", name: "Swift", icon: SiSwift, color: "#FA7343" },
+  { id: "kotlin", name: "Kotlin", icon: SiKotlin, color: "#7F52FF" },
+  { id: "php", name: "PHP", icon: SiPhp, color: "#777BB4" },
 ];
+
+// Get all supported languages
+const ALL_LANGUAGES = getSupportedLanguages().map(langId => ({
+  id: langId,
+  name: getLanguageDisplayName(langId)
+}));
 
 /**
  * Component for room listing, creation and joining
@@ -31,7 +50,6 @@ export default function CodeRoom() {
   const [newRoomName, setNewRoomName] = useState("");
   const [newRoomLanguage, setNewRoomLanguage] = useState("javascript");
   const [isLoading, setIsLoading] = useState(false);
-  const [languages, setLanguages] = useState<any[]>([]);
   const [showAllLanguages, setShowAllLanguages] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   
@@ -40,14 +58,6 @@ export default function CodeRoom() {
   const createRoom = useMutation(api.rooms.create);
   const joinRoomByCode = useMutation(api.rooms.joinByCode);
   const { theme: _ } = useTheme();
-  
-  // Fetch available languages
-  useEffect(() => {
-    void fetch("https://emkc.org/api/v2/piston/runtimes")
-      .then((r) => r.json())
-      .then(setLanguages)
-      .catch(err => console.error("Failed to fetch languages:", err));
-  }, []);
   
   const handleCreateRoomClick = useCallback(() => {
     setIsCreateModalOpen(true);
@@ -146,7 +156,7 @@ export default function CodeRoom() {
                 
                 {!showAllLanguages ? (
                   <>
-                    <div className="grid grid-cols-3 gap-2 mb-3">
+                    <div className="grid grid-cols-4 gap-2 mb-3">
                       {POPULAR_LANGUAGES.map(lang => {
                         const IconComponent = lang.icon;
                         return (
@@ -184,19 +194,11 @@ export default function CodeRoom() {
                       className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-3 py-2.5 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-colors"
                       disabled={isLoading}
                     >
-                      {languages.length > 0 ? (
-                        languages.map((lang) => (
-                          <option key={lang.language} value={lang.language}>
-                            {lang.language}
-                          </option>
-                        ))
-                      ) : (
-                        POPULAR_LANGUAGES.map(lang => (
-                          <option key={lang.id} value={lang.id}>
-                            {lang.name}
-                          </option>
-                        ))
-                      )}
+                      {ALL_LANGUAGES.map(lang => (
+                        <option key={lang.id} value={lang.id}>
+                          {lang.name}
+                        </option>
+                      ))}
                     </select>
                     <button
                       type="button"
