@@ -169,7 +169,7 @@ export default function CodeRoom() {
                 
                 {!showAllLanguages ? (
                   <>
-                    <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 gap-1 xs:gap-1.5 sm:gap-2 mb-2 xs:mb-3 sm:mb-3">
+                    <div className="grid grid-cols-3 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-4 gap-1 xs:gap-1.5 sm:gap-2 mb-2 xs:mb-3 sm:mb-3">
                       {POPULAR_LANGUAGES.map(lang => {
                         const IconComponent = lang.icon;
                         return (
