@@ -145,6 +145,55 @@ export const list = query({
   },
 });
 
+// List rooms with additional details including active collaborators
+export const listWithDetails = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Get room IDs
+    const roomIds = sessions.map(session => session.roomId);
+    
+    // Get all rooms
+    const roomsPromises = roomIds.map(async (roomId) => {
+      const room = await ctx.db.get(roomId);
+      if (!room) return null;
+      
+      // Get active collaborators (users seen in the last 5 minutes)
+      const activePresence = await ctx.db
+        .query("presence")
+        .withIndex("by_room", (q) => q.eq("roomId", roomId))
+        .filter((q) => q.gt(q.field("lastSeenTime"), Date.now() - 5 * 60 * 1000)) // 5 minutes
+        .collect();
+        
+      // Find sessions for this room to determine last activity
+      const roomSessions = await ctx.db
+        .query("sessions")
+        .filter((q) => q.eq(q.field("roomId"), roomId))
+        .collect();
+      
+      // Use the most recent access time as the last edited time
+      const lastAccessTimes = roomSessions.map(s => s.lastAccessTime);
+      const lastEdited = lastAccessTimes.length > 0 ? Math.max(...lastAccessTimes) : null;
+      
+      return {
+        room,
+        activeCollaborators: activePresence.length,
+        lastEdited
+      };
+    });
+    
+    const roomsWithDetails = await Promise.all(roomsPromises);
+    return roomsWithDetails.filter((item): item is NonNullable<typeof item> => item !== null);
+  },
+});
+
 export const updateCode = mutation({
   args: {
     roomId: v.id("rooms"),
