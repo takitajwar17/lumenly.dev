@@ -1,6 +1,6 @@
 # flex-template
 This is a project built with [lumenly.dev](https://lumenly.dev) using [Convex](https://convex.dev) as its backend.
-
+  
 ## Installation
 
 ### 1. Git Clone Template
@@ -26,7 +26,7 @@ npm i && npm run dev
 ```
 
 Once the app is running, you'll need to sign in (anonymously) and then create a room from the app's interface.
-
+  
 ## Project structure
   
 The frontend code is in the `app` directory and is built with [Vite](https://vitejs.dev/).
