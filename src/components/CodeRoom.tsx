@@ -43,6 +43,18 @@ const ALL_LANGUAGES = getSupportedLanguages().map(langId => ({
   name: getLanguageDisplayName(langId)
 }));
 
+// Add this CSS at the top of the file, after the imports
+const styles = `
+  .scrollbar-hide {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+`;
+
 /**
  * Component for room listing, creation and joining
  */
@@ -68,6 +80,16 @@ export default function CodeRoom() {
   // Animation trigger after mount
   useEffect(() => {
     setMounted(true);
+  }, []);
+  
+  // Add the styles to the document
+  useEffect(() => {
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = styles;
+    document.head.appendChild(styleSheet);
+    return () => {
+      document.head.removeChild(styleSheet);
+    };
   }, []);
   
   const handleCreateRoomClick = useCallback(() => {
@@ -364,7 +386,7 @@ export default function CodeRoom() {
                 </div>
               </div>
             ) : roomsWithPresence && roomsWithPresence.length > 0 ? (
-              <div className={`overflow-auto max-h-[calc(100vh-160px)] md:max-h-[500px] pr-2 pb-4 transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+              <div className={`overflow-auto max-h-[calc(100vh-160px)] md:max-h-[500px] pr-2 pb-4 transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} scrollbar-hide`}>
                 <div className="space-y-3">
                   {roomsWithPresence.map((roomData, index) => {
                     const { room, activeCollaborators, lastEdited } = roomData;
