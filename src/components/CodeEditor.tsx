@@ -279,10 +279,12 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     const now = Date.now();
     setLastTypingTime(now);
     
-    // IMPORTANT: Immediately send typing status to show typing indicator instantly
+    // IMPORTANT: During active typing, just track the position without sending full updates
+    // This prevents cursor jumps while typing
     if (presenceEditorRef.current && selectedRoomId) {
       const position = presenceEditorRef.current.getPosition();
       if (position) {
+        // Only update typing status, position gets tracked separately
         updateTypingStatus(position);
       }
     }
@@ -298,15 +300,27 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     // Set a timeout to indicate when typing has stopped
     const timeoutId = setTimeout(() => {
       if (presenceEditorRef.current && selectedRoomId) {
+        // CRITICAL: Must get position AFTER typing has stopped
+        // This ensures we have the correct final cursor position
         const currentPosition = presenceEditorRef.current.getPosition();
         const currentSelection = presenceEditorRef.current.getSelection();
         
         if (currentPosition) {
-          // Send cursor position after typing has stopped
-          debouncedUpdatePresence(currentPosition, currentSelection, true);
+          // Send cursor position after typing has stopped, with a longer delay
+          // to ensure the editor has settled
+          setTimeout(() => {
+            // Double-check that we still have a valid editor reference
+            if (presenceEditorRef.current) {
+              const finalPosition = presenceEditorRef.current.getPosition();
+              const finalSelection = presenceEditorRef.current.getSelection();
+              if (finalPosition) {
+                debouncedUpdatePresence(finalPosition, finalSelection, true);
+              }
+            }
+          }, 100);
         }
       }
-    }, 750); // Longer timeout for better fast typing handling
+    }, 1500); // Increased significantly for better handling of rapid typing
     
     setTypingTimeoutId(timeoutId);
   }, [selectedRoomId, debouncedUpdateCode, typingTimeoutId, updateTypingStatus, debouncedUpdatePresence]);
