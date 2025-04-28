@@ -17,28 +17,51 @@ export function useCodeCompletion({
 }: UseCodeCompletionProps) {
   const [isCompletionLoading, setIsCompletionLoading] = useState(false);
   const [completionSuggestion, setCompletionSuggestion] = useState<string | null>(null);
+  const isRequestingCompletionRef = useRef(false);
+  const completionDisposableRef = useRef<any>(null);
   
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<Monaco | null>(null);
   
   const getCodeCompletion = useAction(api.code.getCodeCompletion);
 
+  // Cleanup any previous completion
+  const cleanupPreviousCompletion = useCallback(() => {
+    if (completionDisposableRef.current) {
+      completionDisposableRef.current.dispose();
+      completionDisposableRef.current = null;
+    }
+    setCompletionSuggestion(null);
+  }, []);
+
   // Add a custom code completion hook
   const triggerCodeCompletion = useCallback(async () => {
     if (!editorRef.current || !monacoRef.current) return;
     
-    const workspace = editorRef.current.getModel()?._associatedResource?.workspace;
-    if (!workspace) return;
+    // Get the current model and check if it exists
+    const model = editorRef.current.getModel();
+    if (!model) return;
     
+    // Don't request if we're already waiting for a completion
+    if (isRequestingCompletionRef.current) return;
+    
+    // Clean up any previous completions first
+    cleanupPreviousCompletion();
+    
+    // Mark that we're requesting completion
+    isRequestingCompletionRef.current = true;
     setIsCompletionLoading(true);
     
     try {
       const monaco = monacoRef.current;
       const editor = editorRef.current;
-      const model = editor.getModel();
       const position = editor.getPosition();
       
-      if (!model || !position) return;
+      if (!model || !position) {
+        isRequestingCompletionRef.current = false;
+        setIsCompletionLoading(false);
+        return;
+      }
       
       // Get current code and cursor position
       const code = model.getValue();
@@ -47,19 +70,32 @@ export function useCodeCompletion({
         column: position.column
       };
       
+      // Get the workspace information from the model
+      const language = model.getLanguageId() || 'javascript';
+      
       // Get completion from the server
       const result = await getCodeCompletion({
         code,
-        language: workspace.language || 'javascript',
+        language,
         cursorPosition,
-        filename: workspace.name
+        filename: model.uri.toString()
       });
       
+      // If we got a result and the editor still exists
       if (result && result.completion && editor) {
-        // Create the ghost text provider
         const suggestedText = result.completion;
-        const suggestLineNumber = position.lineNumber;
-        const suggestColumn = position.column;
+        setCompletionSuggestion(suggestedText);
+        
+        // Get the current position again (it might have changed)
+        const currentPosition = editor.getPosition();
+        if (!currentPosition) {
+          isRequestingCompletionRef.current = false;
+          setIsCompletionLoading(false);
+          return;
+        }
+        
+        const suggestLineNumber = currentPosition.lineNumber;
+        const suggestColumn = currentPosition.column;
         
         // Register a content provider for ghost text
         const provider = {
@@ -69,6 +105,7 @@ export function useCodeCompletion({
             context: any, 
             token: any
           ) => {
+            // Only provide the suggestion at the exact position it was requested
             if (position.lineNumber !== suggestLineNumber || position.column !== suggestColumn) {
               return { items: [] };
             }
@@ -92,13 +129,14 @@ export function useCodeCompletion({
         
         // Register the ghost text provider
         const disposable = monaco.languages.registerInlineCompletionsProvider('*', provider);
+        completionDisposableRef.current = disposable;
         
         // Trigger ghost text to show
-        editor.trigger('copilot', 'editor.action.inlineSuggest.trigger', {});
+        editor.trigger('ai-completion', 'editor.action.inlineSuggest.trigger', {});
         
         // Setup a command to accept the suggestion with Tab
-        editor.addCommand(monaco.KeyCode.Tab, () => {
-          void editor.executeEdits('copilot', [{
+        const commandDisposable = editor.addCommand(monaco.KeyCode.Tab, () => {
+          void editor.executeEdits('ai-completion', [{
             range: {
               startLineNumber: suggestLineNumber,
               startColumn: suggestColumn,
@@ -110,46 +148,68 @@ export function useCodeCompletion({
           }]);
           
           // Clean up after accepting the suggestion
-          disposable.dispose();
+          cleanupPreviousCompletion();
+          commandDisposable.dispose();
         }, 
         // Only enable when there's a suggestion
-        () => !!suggestedText);
+        () => !!suggestedText && editor.getPosition()?.lineNumber === suggestLineNumber && editor.getPosition()?.column === suggestColumn);
         
         // Set a timeout to automatically clean up if not accepted
         setTimeout(() => {
-          disposable.dispose();
-        }, 10000); // Suggestions disappear after 10 seconds if not accepted
+          cleanupPreviousCompletion();
+        }, 15000); // Suggestions disappear after 15 seconds if not accepted
       }
     } catch (error) {
       console.error("Code completion error:", error);
     } finally {
+      isRequestingCompletionRef.current = false;
       setIsCompletionLoading(false);
     }
-  }, [getCodeCompletion]);
+  }, [getCodeCompletion, cleanupPreviousCompletion]);
   
   // Auto-trigger completions when the user stops typing
   const setupAutoCompletionTrigger = useCallback((editor: any) => {
     if (!editor) return { dispose: () => {} };
     
+    // Track when user is typing to avoid overlapping triggers
+    let isUserTyping = false;
+    let lastAutoTriggerTime = 0;
+    
     // Add change content handler
     const disposable = editor.onDidChangeModelContent((e: any) => {
+      isUserTyping = true;
+      
       // Reset any existing auto-completion timeout
       if (typingTimeoutId) {
         clearTimeout(typingTimeoutId);
       }
       
-      // Auto-trigger completions after 1.5 seconds of inactivity
+      // Auto-trigger completions after inactivity
       const newTimeoutId = setTimeout(() => {
+        isUserTyping = false;
+        
+        // Don't trigger completions too frequently
+        const now = Date.now();
+        if (now - lastAutoTriggerTime < 5000) {
+          return;
+        }
+        
+        // Don't trigger if we're already waiting for a completion
+        if (isRequestingCompletionRef.current) {
+          return;
+        }
+        
         const position = editor.getPosition();
         if (!position) return;
         
         const model = editor.getModel();
         if (!model) return;
         
+        // Get the current line content
         const line = model.getLineContent(position.lineNumber);
         const textBeforeCursor = line.substring(0, position.column - 1);
         
-        // Only trigger after certain patterns that would benefit from completion
+        // Check if we're in a good context to trigger completion
         const shouldTrigger = 
           // After dot operator (e.g., object.)
           textBeforeCursor.endsWith('.') || 
@@ -162,18 +222,26 @@ export function useCodeCompletion({
           // After equal sign (e.g., const x =)
           textBeforeCursor.endsWith('= ') ||
           // After keywords like return, if, for, while 
-          /\b(return|if|for|while|switch)\s+$/.test(textBeforeCursor);
+          /\b(return|if|for|while|switch)\s+$/.test(textBeforeCursor) ||
+          // After typing a few letters of a word
+          /\b\w{3,}$/.test(textBeforeCursor);
         
         if (shouldTrigger) {
+          lastAutoTriggerTime = now;
           void triggerCodeCompletion();
         }
-      }, 1500); // Wait 1.5 seconds after typing stops
+      }, 2000); // Wait 2 seconds after typing stops - longer to avoid conflict with cursor updates
       
       setTypingTimeoutId(newTimeoutId);
     });
     
-    return disposable;
-  }, [triggerCodeCompletion, typingTimeoutId, setTypingTimeoutId]);
+    return {
+      dispose: () => {
+        disposable.dispose();
+        cleanupPreviousCompletion();
+      }
+    };
+  }, [triggerCodeCompletion, typingTimeoutId, setTypingTimeoutId, cleanupPreviousCompletion]);
 
   return {
     editorRef,

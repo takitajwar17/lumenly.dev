@@ -252,12 +252,27 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     // Register keyboard shortcut for manual code completion (Ctrl+Space)
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyCode.Space,
-      () => void triggerCodeCompletion()
+      () => {
+        // Clear any pending typing timeouts to avoid conflicts
+        if (typingTimeoutId) {
+          clearTimeout(typingTimeoutId);
+          setTypingTimeoutId(null);
+        }
+        // Execute after a small delay to ensure cursor position is stable
+        setTimeout(() => {
+          void triggerCodeCompletion();
+        }, 50);
+      }
     );
     
     // Clean up function
     return () => {
-      completionDisposable.dispose();
+      if (completionDisposable && typeof completionDisposable.dispose === 'function') {
+        completionDisposable.dispose();
+      } else if (completionDisposable) {
+        // In case completionDisposable has a different structure
+        console.warn("Completion disposable has unexpected structure");
+      }
       selectionDisposable();
       cursorDisposable();
     };
