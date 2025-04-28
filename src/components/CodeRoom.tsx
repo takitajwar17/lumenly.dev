@@ -674,8 +674,8 @@ export default function WorkspaceHub() {
             
             <h1 className="text-2xl md:text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-2 md:mb-3 transition-colors relative">
               <span className="relative">
-                <span className="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-300 bg-clip-text text-transparent">Real-time Collaboration</span>
-                <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-300 bg-clip-text text-transparent blur-[2px] opacity-30 -z-10 translate-y-[1px] translate-x-[0.5px]">Real-time Collaboration</span>
+                <span className="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-300 bg-clip-text text-transparent">Smarter Coding, Together.</span>
+                <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-300 bg-clip-text text-transparent blur-[2px] opacity-30 -z-10 translate-y-[1px] translate-x-[0.5px]">Smarter Coding, Together.</span>
               </span>
             </h1>
             

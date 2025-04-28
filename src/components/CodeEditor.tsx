@@ -688,11 +688,23 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
           <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/10 border-b border-indigo-100 dark:border-indigo-900/20 transition-colors">
             <div className="text-center">
               <p className="text-sm font-medium text-indigo-700 dark:text-indigo-400 mb-1.5 transition-colors">Workspace Code</p>
-              <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 px-3 py-2 transition-colors">
-                <p className="text-xl tracking-wider font-mono font-semibold text-indigo-600 dark:text-indigo-400 transition-colors break-all">
+              <button
+                onClick={() => {
+                  void navigator.clipboard.writeText(workspace.code);
+                  setIsCopied(true);
+                  toast.success('Workspace code copied to clipboard');
+                  setTimeout(() => setIsCopied(false), 1500);
+                }}
+                className="bg-white dark:bg-gray-800 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 px-3 py-2 transition-colors w-full flex items-center justify-center group focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                title="Click to copy code"
+                type="button"
+              >
+                <span className="text-xl tracking-wider font-mono font-semibold text-indigo-600 dark:text-indigo-400 transition-colors break-all select-all">
                   {workspace.code}
-                </p>
-              </div>
+                </span>
+                <FiCopy className={`ml-2 w-5 h-5 transition-opacity ${isCopied ? 'opacity-100 text-green-500' : 'opacity-60 group-hover:opacity-100 text-indigo-400'}`} />
+                {isCopied && <span className="ml-2 text-xs text-green-500 font-medium">Copied!</span>}
+              </button>
               <p className="text-xs text-indigo-600/70 dark:text-indigo-400/70 mt-2 transition-colors">Share this code with collaborators</p>
             </div>
           </div>
@@ -760,11 +772,23 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
               <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/10 border-b border-indigo-100 dark:border-indigo-900/20 transition-colors">
                 <div className="text-center">
                   <p className="text-sm font-medium text-indigo-700 dark:text-indigo-400 mb-1.5 transition-colors">Workspace Code</p>
-                  <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 px-3 py-2 transition-colors">
-                    <p className="text-xl tracking-wider font-mono font-semibold text-indigo-600 dark:text-indigo-400 transition-colors break-all">
+                  <button
+                    onClick={() => {
+                      void navigator.clipboard.writeText(workspace.code);
+                      setIsCopied(true);
+                      toast.success('Workspace code copied to clipboard');
+                      setTimeout(() => setIsCopied(false), 1500);
+                    }}
+                    className="bg-white dark:bg-gray-800 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 px-3 py-2 transition-colors w-full flex items-center justify-center group focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    title="Click to copy code"
+                    type="button"
+                  >
+                    <span className="text-xl tracking-wider font-mono font-semibold text-indigo-600 dark:text-indigo-400 transition-colors break-all select-all">
                       {workspace.code}
-                    </p>
-                  </div>
+                    </span>
+                    <FiCopy className={`ml-2 w-5 h-5 transition-opacity ${isCopied ? 'opacity-100 text-green-500' : 'opacity-60 group-hover:opacity-100 text-indigo-400'}`} />
+                    {isCopied && <span className="ml-2 text-xs text-green-500 font-medium">Copied!</span>}
+                  </button>
                   <p className="text-xs text-indigo-600/70 dark:text-indigo-400/70 mt-2 transition-colors">Share this code with collaborators</p>
                 </div>
               </div>
