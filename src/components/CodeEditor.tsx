@@ -5,7 +5,7 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { useTheme } from "../ThemeContext";
 import { toast } from "sonner";
-import Editor from "@monaco-editor/react";
+import Editor, { Monaco, OnMount } from "@monaco-editor/react";
 import { FiChevronLeft, FiCopy, FiX } from "react-icons/fi";
 import FileUploadButton from "../FileUploadButton";
 import AIReviewPanel, { AIReview } from "../AIReviewPanel";
@@ -42,6 +42,8 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [showMobileCollaborators, setShowMobileCollaborators] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [isCompletionLoading, setIsCompletionLoading] = useState(false);
+  const [completionSuggestion, setCompletionSuggestion] = useState<string | null>(null);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,6 +63,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
   const leaveRoom = useMutation(api.rooms.leaveRoom);
   const executeCode = useAction(api.code.executeCode);
   const getAIAssistance = useAction(api.code.getAIAssistance);
+  const getCodeCompletion = useAction(api.code.getCodeCompletion);
   
   // Track presence changes to show notifications
   const [previousPresence, setPreviousPresence] = useState<any[]>([]);
@@ -344,180 +347,9 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
   
   // Store editor instance reference
   const editorRef = useRef<any>(null);
+  const monacoRef = useRef<Monaco | null>(null);
 
-  // Improved editor change handler with optimized performance
-  const handleEditorChange = useCallback((value: string | undefined) => {
-    if (!value || !selectedRoomId) return;
-    
-    // Always update local state immediately for responsive UI
-    setLocalCode(value);
-    setCode(value);
-    
-    // Calculate word count
-    const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
-    setWordCount(wordCount);
-    
-    // Record the typing time
-    const now = Date.now();
-    setLastTypingTime(now);
-    
-    // Debounce server updates to avoid overwhelming the network
-    debouncedUpdateCode(value);
-    
-    // Manage cursor presence during typing
-    if (editorRef.current) {
-      // Clear any existing typing timeout
-      if (typingTimeoutId) {
-        clearTimeout(typingTimeoutId);
-      }
-      
-      // During fast typing, don't send cursor position to others
-      // This prevents cursor jumps and character loss
-      
-      // Set a timeout to indicate when typing has stopped
-      const timeoutId = setTimeout(() => {
-        if (editorRef.current && selectedRoomId) {
-          const currentPosition = editorRef.current.getPosition();
-          const currentSelection = editorRef.current.getSelection();
-          
-          if (currentPosition) {
-            // Send cursor position after typing has stopped
-            void updatePresence({
-              roomId: selectedRoomId,
-              cursor: {
-                line: currentPosition.lineNumber,
-                column: currentPosition.column,
-              },
-              selection: currentSelection ? {
-                startLine: currentSelection.startLineNumber,
-                startColumn: currentSelection.startColumn,
-                endLine: currentSelection.endLineNumber,
-                endColumn: currentSelection.endColumn,
-              } : undefined,
-              isActive: true,
-              isTyping: false
-            });
-          }
-        }
-      }, 750); // Longer timeout for better fast typing handling
-      
-      setTypingTimeoutId(timeoutId);
-    }
-  }, [selectedRoomId, debouncedUpdateCode, typingTimeoutId]);
-
-  // Add an additional handler for selection changes
-  useEffect(() => {
-    if (!editorRef.current || !selectedRoomId) return;
-    
-    // Add selection change listener
-    const editor = editorRef.current;
-    const selectionChangeDisposable = editor.onDidChangeCursorSelection((e: any) => {
-      // Only consider it a selection if text is actually selected
-      const isTextSelected = e.selection && 
-        (e.selection.startLineNumber !== e.selection.endLineNumber || 
-         e.selection.startColumn !== e.selection.endColumn);
-      
-      // When selection changes, update presence
-      const position = editor.getPosition();
-      if (position) {
-        void updatePresence({
-          roomId: selectedRoomId,
-          cursor: {
-            line: position.lineNumber,
-            column: position.column,
-          },
-          selection: isTextSelected ? {
-            startLine: e.selection.startLineNumber,
-            startColumn: e.selection.startColumn,
-            endLine: e.selection.endLineNumber,
-            endColumn: e.selection.endColumn,
-          } : undefined,
-          isActive: true,
-        });
-      }
-    });
-    
-    // Clean up
-    return () => {
-      selectionChangeDisposable.dispose();
-    };
-  }, [selectedRoomId, updatePresence]);
-  
-  // Cursor movement without typing
-  useEffect(() => {
-    if (!editorRef.current || !selectedRoomId) return;
-    
-    const editor = editorRef.current;
-    const cursorPositionDisposable = editor.onDidChangeCursorPosition((e: any) => {
-      // Only handle if this is just a cursor move, not a selection
-      const selection = editor.getSelection();
-      const isJustCursorMove = !selection || 
-        (selection.startLineNumber === selection.endLineNumber && 
-         selection.startColumn === selection.endColumn);
-      
-      if (isJustCursorMove) {
-        void updatePresence({
-          roomId: selectedRoomId,
-          cursor: {
-            line: e.position.lineNumber,
-            column: e.position.column,
-          },
-          selection: undefined,
-          isActive: true,
-        });
-      }
-    });
-    
-    return () => {
-      cursorPositionDisposable.dispose();
-    };
-  }, [selectedRoomId, updatePresence]);
-
-  // Update word count on initial load
-  useEffect(() => {
-    if (localCode) {
-      const wordCount = localCode.trim() ? localCode.trim().split(/\s+/).length : 0;
-      setWordCount(wordCount);
-    }
-  }, [localCode]);
-
-  // Enhanced Editor options for better performance
-  const editorOptions = useMemo(() => ({
-    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-    fontSize: 14,
-    lineHeight: 1.6,
-    padding: { top: 16, bottom: 16 },
-    bracketPairColorization: { enabled: true },
-    guides: {
-      bracketPairs: true,
-      indentation: true,
-    },
-    minimap: { enabled: false },
-    scrollBeyondLastLine: false,
-    renderLineHighlight: "all" as const,
-    cursorBlinking: "smooth" as const,
-    cursorSmoothCaretAnimation: "on" as const,
-    smoothScrolling: true,
-    scrollbar: {
-      verticalScrollbarSize: 12,
-      horizontalScrollbarSize: 12,
-      vertical: "visible" as const,
-      horizontal: "visible" as const,
-      useShadows: true,
-      verticalHasArrows: false,
-      horizontalHasArrows: false,
-      alwaysConsumeMouseWheel: false,
-      scrollByPage: false
-    },
-    tabSize: 2,
-    automaticLayout: true,
-    wordBasedSuggestions: "off" as const,
-    quickSuggestions: false,
-    occurrencesHighlight: "off" as const,
-    renderWhitespace: "none" as const,
-    renderControlCharacters: false
-  }), []);
-
+  // Essential editor functionality
   const handleRunCode = useCallback(async () => {
     if (!code || !workspace) return;
     setIsRunningCode(true);
@@ -615,6 +447,287 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
   const handleAIAssistWrapper = useCallback(() => {
     void handleAIAssist();
   }, [handleAIAssist]);
+
+  // Enhanced Editor options for better performance
+  const editorOptions = useMemo(() => ({
+    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+    fontSize: 14,
+    lineHeight: 1.6,
+    padding: { top: 16, bottom: 16 },
+    bracketPairColorization: { enabled: true },
+    guides: {
+      bracketPairs: true,
+      indentation: true,
+    },
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    renderLineHighlight: "all" as const,
+    cursorBlinking: "smooth" as const,
+    cursorSmoothCaretAnimation: "on" as const,
+    smoothScrolling: true,
+    scrollbar: {
+      verticalScrollbarSize: 12,
+      horizontalScrollbarSize: 12,
+      vertical: "visible" as const,
+      horizontal: "visible" as const,
+      useShadows: true,
+      verticalHasArrows: false,
+      horizontalHasArrows: false,
+      alwaysConsumeMouseWheel: false,
+      scrollByPage: false
+    },
+    tabSize: 2,
+    automaticLayout: true,
+    wordBasedSuggestions: "off" as const,
+    quickSuggestions: false,
+    occurrencesHighlight: "off" as const,
+    renderWhitespace: "none" as const,
+    renderControlCharacters: false
+  }), []);
+  
+  // Add a custom code completion hook
+  const triggerCodeCompletion = useCallback(async () => {
+    if (!editorRef.current || !workspace || !monacoRef.current) return;
+    
+    setIsCompletionLoading(true);
+    
+    try {
+      const monaco = monacoRef.current;
+      const editor = editorRef.current;
+      const model = editor.getModel();
+      const position = editor.getPosition();
+      
+      if (!model || !position) return;
+      
+      // Get current code and cursor position
+      const code = model.getValue();
+      const cursorPosition = {
+        line: position.lineNumber,
+        column: position.column
+      };
+      
+      // Get completion from the server
+      const result = await getCodeCompletion({
+        code,
+        language: workspace.language || 'javascript',
+        cursorPosition,
+        filename: workspace.name
+      });
+      
+      if (result && result.completion && editor) {
+        // Create the ghost text provider
+        const suggestedText = result.completion;
+        const suggestLineNumber = position.lineNumber;
+        const suggestColumn = position.column;
+        
+        // Register a content provider for ghost text
+        const provider = {
+          provideInlineCompletions: (
+            model: any, 
+            position: any, 
+            context: any, 
+            token: any
+          ) => {
+            if (position.lineNumber !== suggestLineNumber || position.column !== suggestColumn) {
+              return { items: [] };
+            }
+            
+            return {
+              items: [{
+                insertText: suggestedText,
+                range: {
+                  startLineNumber: suggestLineNumber,
+                  startColumn: suggestColumn,
+                  endLineNumber: suggestLineNumber,
+                  endColumn: suggestColumn
+                }
+              }]
+            };
+          },
+          handleItemDidShow: () => {},
+          handlePartialAccept: () => {},
+          freeInlineCompletions: () => {}
+        };
+        
+        // Register the ghost text provider
+        const disposable = monaco.languages.registerInlineCompletionsProvider('*', provider);
+        
+        // Trigger ghost text to show
+        editor.trigger('copilot', 'editor.action.inlineSuggest.trigger', {});
+        
+        // Setup a command to accept the suggestion with Tab
+        editor.addCommand(monaco.KeyCode.Tab, () => {
+          void editor.executeEdits('copilot', [{
+            range: {
+              startLineNumber: suggestLineNumber,
+              startColumn: suggestColumn,
+              endLineNumber: suggestLineNumber,
+              endColumn: suggestColumn
+            },
+            text: suggestedText,
+            forceMoveMarkers: true
+          }]);
+          
+          // Clean up after accepting the suggestion
+          disposable.dispose();
+        }, 
+        // Only enable when there's a suggestion
+        () => !!suggestedText);
+        
+        // Set a timeout to automatically clean up if not accepted
+        setTimeout(() => {
+          disposable.dispose();
+        }, 10000); // Suggestions disappear after 10 seconds if not accepted
+      }
+    } catch (error) {
+      console.error("Code completion error:", error);
+    } finally {
+      setIsCompletionLoading(false);
+    }
+  }, [getCodeCompletion, workspace]);
+  
+  // Auto-trigger completions when the user stops typing
+  const setupAutoCompletionTrigger = useCallback(() => {
+    if (!editorRef.current) return;
+    
+    const editor = editorRef.current;
+    
+    // Add change content handler
+    const disposable = editor.onDidChangeModelContent((e: any) => {
+      // Reset any existing auto-completion timeout
+      if (typingTimeoutId) {
+        clearTimeout(typingTimeoutId);
+      }
+      
+      // Auto-trigger completions after 1.5 seconds of inactivity
+      const newTimeoutId = setTimeout(() => {
+        const position = editor.getPosition();
+        if (!position) return;
+        
+        const model = editor.getModel();
+        if (!model) return;
+        
+        const line = model.getLineContent(position.lineNumber);
+        const textBeforeCursor = line.substring(0, position.column - 1);
+        
+        // Only trigger after certain patterns that would benefit from completion
+        const shouldTrigger = 
+          // After dot operator (e.g., object.)
+          textBeforeCursor.endsWith('.') || 
+          // After opening parenthesis (e.g., function()
+          textBeforeCursor.endsWith('(') ||
+          // After opening brace (e.g., {)
+          textBeforeCursor.endsWith('{') ||
+          // After arrow in arrow functions (e.g., () =>)
+          textBeforeCursor.endsWith('=>') ||
+          // After equal sign (e.g., const x =)
+          textBeforeCursor.endsWith('= ') ||
+          // After keywords like return, if, for, while 
+          /\b(return|if|for|while|switch)\s+$/.test(textBeforeCursor);
+        
+        if (shouldTrigger) {
+          void triggerCodeCompletion();
+        }
+      }, 1500); // Wait 1.5 seconds after typing stops
+      
+      setTypingTimeoutId(newTimeoutId);
+    });
+    
+    return disposable;
+  }, [triggerCodeCompletion, typingTimeoutId]);
+  
+  // Setup editor keyboard shortcuts and event handlers
+  const handleEditorMount: OnMount = (editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+    
+    // Register keyboard shortcut for manual code completion (Ctrl+Space)
+    editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyCode.Space,
+      () => void triggerCodeCompletion()
+    );
+    
+    // Add cursor position tracking
+    editor.onDidChangeCursorPosition(e => {
+      setCursorPosition({
+        line: e.position.lineNumber,
+        column: e.position.column
+      });
+      
+      // Update presence with debouncing
+      const position = editor.getPosition();
+      if (position) {
+        debouncedUpdatePresence(
+          position,
+          editor.getSelection(),
+          true
+        );
+      }
+    });
+    
+    // Track selection changes
+    editor.onDidChangeCursorSelection(e => {
+      // Only track non-empty selections
+      if (!e.selection.isEmpty()) {
+        const position = editor.getPosition();
+        if (position) {
+          debouncedUpdatePresence(
+            position,
+            e.selection,
+            true
+          );
+        }
+      }
+    });
+    
+    // Set up auto-completion
+    const disposable = setupAutoCompletionTrigger();
+    
+    // Add model content change handler for word count
+    editor.onDidChangeModelContent(() => {
+      // Calculate word count
+      const text = editor.getValue();
+      const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+      setWordCount(wordCount);
+      
+      // Update local state and trigger server update
+      setLocalCode(text);
+      setCode(text);
+      debouncedUpdateCode(text);
+      
+      // Record typing time for presence updates
+      setLastTypingTime(Date.now());
+    });
+    
+    // Clean up function
+    return () => {
+      disposable.dispose();
+    };
+  };
+
+  // Improved editor change handler with optimized performance
+  const handleEditorChange = useCallback((value: string | undefined) => {
+    if (!value || !selectedRoomId) return;
+    
+    // Always update local state immediately for responsive UI
+    setLocalCode(value);
+    setCode(value);
+    
+    // Calculate word count
+    const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
+    setWordCount(wordCount);
+    
+    // Record the typing time
+    const now = Date.now();
+    setLastTypingTime(now);
+    
+    // Debounce server updates to avoid overwhelming the network
+    debouncedUpdateCode(value);
+  }, [selectedRoomId, debouncedUpdateCode]);
+
+  const triggerCodeCompletionWrapper = useCallback(() => {
+    void triggerCodeCompletion();
+  }, [triggerCodeCompletion]);
 
   if (isLoading && !workspace) {
     return (
@@ -739,6 +852,27 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
             </div>
           </div>
         </div>
+
+        {/* Keyboard shortcuts guide - Very visible at bottom */}
+        <div className="mt-auto border-t border-gray-200 dark:border-gray-700 bg-indigo-50 dark:bg-indigo-900/30 p-3">
+          <div className="rounded-lg bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-800/50 p-2 shadow-sm">
+            <p className="text-xs font-medium text-gray-800 dark:text-gray-200 mb-1.5">AI Code Completion</p>
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-600 dark:text-gray-400">Trigger:</span>
+                <div className="flex items-center space-x-1">
+                  <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-xs font-medium rounded border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300">CTRL</span>
+                  <span className="text-gray-500 dark:text-gray-500">·</span>
+                  <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-xs font-medium rounded border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300">SPACE</span>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-600 dark:text-gray-400">Accept:</span>
+                <span className="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 text-xs font-medium rounded border border-indigo-200 dark:border-indigo-800/50 text-indigo-700 dark:text-indigo-300">TAB</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Floating sidebar for medium screens (md) when toggled */}
@@ -826,6 +960,27 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
                 </div>
               </div>
             </div>
+
+            {/* Keyboard shortcuts guide for floating sidebar */}
+            <div className="mt-auto border-t border-gray-200 dark:border-gray-700 bg-indigo-50 dark:bg-indigo-900/30 p-3">
+              <div className="rounded-lg bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-800/50 p-2 shadow-sm">
+                <p className="text-xs font-medium text-gray-800 dark:text-gray-200 mb-1.5">AI Code Completion</p>
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-600 dark:text-gray-400">Trigger:</span>
+                    <div className="flex items-center space-x-1">
+                      <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-xs font-medium rounded border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300">CTRL</span>
+                      <span className="text-gray-500 dark:text-gray-500">·</span>
+                      <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-xs font-medium rounded border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300">SPACE</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-600 dark:text-gray-400">Accept:</span>
+                    <span className="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 text-xs font-medium rounded border border-indigo-200 dark:border-indigo-800/50 text-indigo-700 dark:text-indigo-300">TAB</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -835,7 +990,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
         {selectedRoomId && workspace ? (
           <>
             {/* Header with toolbar */}
-            <EditorToolbar 
+            <EditorToolbar
               workspace={workspace}
               activeTab={activeTab}
               isRunningCode={isRunningCode}
@@ -853,6 +1008,8 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
               presence={presence}
               onToggleCollaborators={toggleMobileCollaborators}
               onToggleSidebar={toggleSidebar}
+              isCompletionLoading={isCompletionLoading}
+              onRequestCompletion={triggerCodeCompletionWrapper}
             />
 
             {/* Mobile Collaborators Drawer - Only visible when toggled */}
@@ -882,58 +1039,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
                     onChange={handleEditorChange}
                     theme={theme === 'dark' ? 'vs-dark' : 'light'}
                     options={editorOptions}
-                    onMount={(editor, monaco) => {
-                      // Store editor reference
-                      editorRef.current = editor;
-                      
-                      // Configure for better performance
-                      monaco.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'light');
-                      
-                      // Optimize editor for performance
-                      editor.updateOptions({
-                        renderValidationDecorations: "off" as const,
-                        formatOnType: false,
-                        formatOnPaste: false,
-                        selectionHighlight: false,
-                        matchBrackets: "never" as const,
-                        contextmenu: false,
-                      });
-                      
-                      // Throttled cursor position handler
-                      let lastCursorUpdateTime = 0;
-                      editor.onDidChangeCursorPosition((e) => {
-                        const now = Date.now();
-                        
-                        // Limit cursor updates to prevent UI lag
-                        if (now - lastCursorUpdateTime > 100) {
-                          lastCursorUpdateTime = now;
-                          
-                          const position = editor.getPosition();
-                          const selection = editor.getSelection();
-                          
-                          if (position) {
-                            setCursorPosition({
-                              line: position.lineNumber,
-                              column: position.column
-                            });
-                            
-                            // Only update cursor presence if not actively typing
-                            if (now - lastTypingTime > 500) {
-                              debouncedUpdatePresence(position, selection, true);
-                            }
-                          }
-                        }
-                      });
-                      
-                      // Set initial cursor position
-                      const position = editor.getPosition();
-                      if (position) {
-                        setCursorPosition({
-                          line: position.lineNumber,
-                          column: position.column
-                        });
-                      }
-                    }}
+                    onMount={handleEditorMount}
                   />
                 </div>
               )}

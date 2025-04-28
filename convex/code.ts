@@ -252,3 +252,121 @@ IMPORTANT:
     }
   },
 });
+
+export const getCodeCompletion = action({
+  args: { 
+    code: v.string(), 
+    language: v.string(),
+    cursorPosition: v.object({
+      line: v.number(),
+      column: v.number()
+    }),
+    filename: v.optional(v.string())
+  },
+  handler: async (ctx, args) => {
+    const customFetch = async (url: string, options: RequestInit) => {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CONVEX_NEBIUS_API_KEY}`,
+        },
+      });
+      return response;
+    };
+
+    const systemPrompt = `You are an AI code completion assistant. Your task is to predict and suggest the next part of the code based on the context provided.
+When provided with code and a cursor position, suggest the next line or block of code that would be appropriate to add at that position.
+Focus on completing current functions, methods, or blocks rather than creating entirely new ones unless it makes sense in context.
+Your suggestions should follow the coding style and patterns visible in the existing code.
+Keep your suggestions concise - typically 1-5 lines of code (never more than 10 lines).
+Do not include docstrings or extensive comments unless it's clearly part of the established pattern.
+Do not repeat code that already exists before the cursor position.
+Your response must be ONLY the suggested code completion, nothing else.`;
+
+    try {
+      // Get code up to cursor position to use as context
+      const codeLines = args.code.split('\n');
+      const cursorLine = args.cursorPosition.line;
+      const cursorColumn = args.cursorPosition.column;
+
+      // Extract code context - everything up to the cursor position
+      let codeContext = '';
+      for (let i = 0; i < codeLines.length; i++) {
+        if (i < cursorLine - 1) {
+          codeContext += codeLines[i] + '\n';
+        } else if (i === cursorLine - 1) {
+          codeContext += codeLines[i].substring(0, cursorColumn);
+          break;
+        }
+      }
+
+      // Create appropriate prompt based on context
+      const userMessage = `I'm coding in ${args.language}${args.filename ? ` in file ${args.filename}` : ''}.
+Here's the code up to my cursor position:
+
+\`\`\`${args.language}
+${codeContext}
+\`\`\`
+
+Provide a completion suggestion that continues from my cursor position. Don't repeat any code before the cursor.`;
+
+      const response = await customFetch('https://api.studio.nebius.com/v1/chat/completions', {
+        method: 'POST',
+        body: JSON.stringify({
+          model: "Qwen/Qwen2.5-Coder-32B-Instruct-fast",
+          temperature: 0.2,
+          max_tokens: 300,
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt
+            },
+            {
+              role: "user",
+              content: userMessage
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error("Nebius API error:", error);
+        throw new Error("Failed to get code completion");
+      }
+
+      const completion = await response.json();
+      console.log("Code completion response:", JSON.stringify(completion, null, 2));
+      
+      if (!completion.choices || !completion.choices[0] || !completion.choices[0].message) {
+        console.error("Invalid API response structure:", completion);
+        throw new Error("Invalid API response structure");
+      }
+
+      const output = completion.choices[0].message;
+      
+      if (output.content) {
+        // Clean up the response to remove markdown code blocks and any other formatting
+        const cleanedContent = output.content
+          .replace(/```[a-zA-Z0-9]*\s*/g, '')
+          .replace(/```\s*$/g, '')
+          .trim();
+        
+        return {
+          completion: cleanedContent,
+          metadata: {
+            model: completion.model,
+            created: completion.created
+          }
+        };
+      } else {
+        throw new Error("No content in response");
+      }
+    } catch (error) {
+      console.error("Code completion error:", error);
+      throw error;
+    }
+  },
+});

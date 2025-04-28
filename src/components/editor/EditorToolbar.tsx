@@ -25,6 +25,7 @@ interface EditorToolbarProps {
   activeTab: string;
   isRunningCode: boolean;
   isGettingReview: boolean;
+  isCompletionLoading?: boolean;
   output: string | null;
   review: Record<string, any> | null;
   onRunCode: () => void;
@@ -34,6 +35,7 @@ interface EditorToolbarProps {
   onClearCode: () => void;
   onUploadCode: (code: string) => void;
   onLanguageDetected: (language: string) => void;
+  onRequestCompletion?: () => void;
   isUpdatingLanguage: boolean;
   presence?: UserPresence[];
   onToggleCollaborators?: () => void;
@@ -45,6 +47,7 @@ export default function EditorToolbar({
   activeTab,
   isRunningCode,
   isGettingReview,
+  isCompletionLoading,
   output,
   review,
   onRunCode,
@@ -54,6 +57,7 @@ export default function EditorToolbar({
   onClearCode,
   onUploadCode,
   onLanguageDetected,
+  onRequestCompletion,
   isUpdatingLanguage,
   presence,
   onToggleCollaborators,
