@@ -301,25 +301,36 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
           });
         }
       }
-    }, 10000); // Just once every 10 seconds is enough
+    }, 10000); // Every 10 seconds for inactive updates
     
     // Minimal heartbeat ping
     const heartbeatId = setInterval(() => {
       const now = Date.now();
-      const isUserActivelyTyping = now - lastTypingTime < 2000;
+      const isUserActivelyTyping = now - lastTypingTime < 750; // Match the timeout used in handleEditorChange
       
       if (editorRef.current && selectedRoomId) {
         if (isUserActivelyTyping) {
-          // During active typing, use a fixed cursor position 
-          // to avoid interfering with user's typing
+          // During active typing, just refresh the typing status
+          // but don't update cursor position to avoid UI issues
           void updatePresence({
             roomId: selectedRoomId,
-            cursor: { line: 1, column: 1 }, // Fixed position won't interfere
+            // Use the actual cursor position instead of a dummy one
+            // but only update the isTyping flag, not the position itself
+            cursor: editorRef.current.getPosition() 
+              ? {
+                  line: editorRef.current.getPosition().lineNumber,
+                  column: editorRef.current.getPosition().column
+                }
+              : { line: 1, column: 1 },
             isActive: true,
             isTyping: true
           });
         } else {
+          // For non-typing status, update everything
           const position = editorRef.current.getPosition();
+          const selection = editorRef.current.getSelection();
+          const hasSelection = selection && !selection.isEmpty();
+          
           if (position) {
             void updatePresence({
               roomId: selectedRoomId,
@@ -327,13 +338,19 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
                 line: position.lineNumber,
                 column: position.column,
               },
+              selection: hasSelection ? {
+                startLine: selection.startLineNumber,
+                startColumn: selection.startColumn,
+                endLine: selection.endLineNumber,
+                endColumn: selection.endColumn,
+              } : undefined,
               isActive: true,
               isTyping: false
             });
           }
         }
       }
-    }, 3000);
+    }, 2000); // Reduced to 2 seconds for more responsive status updates
     
     // Clean up
     return () => {
@@ -647,38 +664,27 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
       () => void triggerCodeCompletion()
     );
     
-    // Add cursor position tracking
-    editor.onDidChangeCursorPosition(e => {
-      setCursorPosition({
-        line: e.position.lineNumber,
-        column: e.position.column
-      });
-      
-      // Update presence with debouncing
-      const position = editor.getPosition();
-      if (position) {
-        debouncedUpdatePresence(
-          position,
-          editor.getSelection(),
-          true
-        );
-      }
+    // Configure for better performance
+    monaco.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'light');
+    
+    // Optimize editor for performance
+    editor.updateOptions({
+      renderValidationDecorations: "off" as const,
+      formatOnType: false,
+      formatOnPaste: false,
+      selectionHighlight: false,
+      matchBrackets: "never" as const,
+      contextmenu: false,
     });
     
-    // Track selection changes
-    editor.onDidChangeCursorSelection(e => {
-      // Only track non-empty selections
-      if (!e.selection.isEmpty()) {
-        const position = editor.getPosition();
-        if (position) {
-          debouncedUpdatePresence(
-            position,
-            e.selection,
-            true
-          );
-        }
-      }
-    });
+    // Set initial cursor position
+    const position = editor.getPosition();
+    if (position) {
+      setCursorPosition({
+        line: position.lineNumber,
+        column: position.column
+      });
+    }
     
     // Set up auto-completion
     const disposable = setupAutoCompletionTrigger();
@@ -721,9 +727,156 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     const now = Date.now();
     setLastTypingTime(now);
     
+    // IMPORTANT: Immediately send typing status to show typing indicator instantly
+    // This fixed the delay in showing "typing" status
+    if (editorRef.current && selectedRoomId) {
+      const position = editorRef.current.getPosition();
+      if (position) {
+        void updatePresence({
+          roomId: selectedRoomId,
+          cursor: {
+            line: position.lineNumber,
+            column: position.column,
+          },
+          isActive: true,
+          isTyping: true // Immediately mark as typing
+        });
+      }
+    }
+    
     // Debounce server updates to avoid overwhelming the network
     debouncedUpdateCode(value);
-  }, [selectedRoomId, debouncedUpdateCode]);
+    
+    // Clear any existing typing timeout
+    if (typingTimeoutId) {
+      clearTimeout(typingTimeoutId);
+    }
+    
+    // Set a timeout to indicate when typing has stopped
+    const timeoutId = setTimeout(() => {
+      if (editorRef.current && selectedRoomId) {
+        const currentPosition = editorRef.current.getPosition();
+        const currentSelection = editorRef.current.getSelection();
+        
+        if (currentPosition) {
+          // Send cursor position after typing has stopped
+          void updatePresence({
+            roomId: selectedRoomId,
+            cursor: {
+              line: currentPosition.lineNumber,
+              column: currentPosition.column,
+            },
+            selection: currentSelection && !currentSelection.isEmpty() ? {
+              startLine: currentSelection.startLineNumber,
+              startColumn: currentSelection.startColumn,
+              endLine: currentSelection.endLineNumber,
+              endColumn: currentSelection.endColumn,
+            } : undefined,
+            isActive: true,
+            isTyping: false // Turn off typing status
+          });
+        }
+      }
+    }, 750); // Longer timeout for better fast typing handling
+    
+    setTypingTimeoutId(timeoutId);
+  }, [selectedRoomId, debouncedUpdateCode, typingTimeoutId, updatePresence]);
+
+  // Add an additional handler for selection changes
+  useEffect(() => {
+    if (!editorRef.current || !selectedRoomId) return;
+    
+    // Add selection change listener
+    const editor = editorRef.current;
+    const selectionChangeDisposable = editor.onDidChangeCursorSelection((e: any) => {
+      // Only consider it a selection if text is actually selected
+      const isTextSelected = e.selection && 
+        (e.selection.startLineNumber !== e.selection.endLineNumber || 
+         e.selection.startColumn !== e.selection.endColumn);
+      
+      if (isTextSelected) {
+        // When selection changes, immediately update presence with selecting status
+        const position = editor.getPosition();
+        if (position) {
+          void updatePresence({
+            roomId: selectedRoomId,
+            cursor: {
+              line: position.lineNumber,
+              column: position.column,
+            },
+            selection: {
+              startLine: e.selection.startLineNumber,
+              startColumn: e.selection.startColumn,
+              endLine: e.selection.endLineNumber,
+              endColumn: e.selection.endColumn,
+            },
+            isActive: true,
+            isTyping: false // Not typing, just selecting
+          });
+        }
+      } else if (e.source === 'mouse') {
+        // If selection was cleared and it was from mouse, update to regular cursor state
+        const position = editor.getPosition();
+        if (position) {
+          void updatePresence({
+            roomId: selectedRoomId,
+            cursor: {
+              line: position.lineNumber,
+              column: position.column,
+            },
+            selection: undefined,
+            isActive: true,
+            isTyping: false
+          });
+        }
+      }
+    });
+    
+    // Clean up
+    return () => {
+      selectionChangeDisposable.dispose();
+    };
+  }, [selectedRoomId, updatePresence]);
+  
+  // Cursor movement without typing
+  useEffect(() => {
+    if (!editorRef.current || !selectedRoomId) return;
+    
+    const editor = editorRef.current;
+    const cursorPositionDisposable = editor.onDidChangeCursorPosition((e: any) => {
+      // Only handle if this is just a cursor move, not a selection
+      const selection = editor.getSelection();
+      const isJustCursorMove = !selection || 
+        (selection.startLineNumber === selection.endLineNumber && 
+         selection.startColumn === selection.endColumn);
+      
+      // Only update cursor if it's not an event from typing (check against last typing time)
+      const now = Date.now();
+      const isFromTyping = now - lastTypingTime < 100;
+      
+      if (isJustCursorMove && !isFromTyping) {
+        setCursorPosition({
+          line: e.position.lineNumber,
+          column: e.position.column
+        });
+        
+        void updatePresence({
+          roomId: selectedRoomId,
+          cursor: {
+            line: e.position.lineNumber,
+            column: e.position.column,
+          },
+          selection: undefined,
+          isActive: true,
+          isTyping: false // Explicitly mark as not typing during cursor moves
+        });
+      }
+    });
+    
+    return () => {
+      cursorPositionDisposable.dispose();
+    };
+  }, [selectedRoomId, updatePresence, lastTypingTime]);
 
   const triggerCodeCompletionWrapper = useCallback(() => {
     void triggerCodeCompletion();
