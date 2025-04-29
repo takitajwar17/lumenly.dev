@@ -12,15 +12,19 @@
   [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=social&logo=linkedin)](https://www.linkedin.com/in/takitajwar17/)
   
   <a href="https://www.lumenly.dev">🌐 Website</a> •
+  <a href="#detailed-documentation">📚 Documentation</a> •
   <a href="#features">✨ Features</a> •
   <a href="#core-components">🧩 Core Components</a> •
   <a href="#getting-started">🚀 Getting Started</a> •
   <a href="#usage">📖 Usage</a> •
   <a href="#architecture">🏗️ Architecture</a> •
   <a href="#contributing">👥 Contributing</a> •
-  <a href="#roadmap">🗺️ Roadmap</a> •
-  <a href="#detailed-documentation">📚 Documentation</a>
+  <a href="#roadmap">🗺️ Roadmap</a>
 </div>
+
+## 📚 Detailed Documentation
+
+For a comprehensive breakdown of the project, visit our [DeepWiki](https://deepwiki.com/takitajwar17/lumenly.dev) covering topics like Technology Stack, Workspace Management, Code Execution, AI Integration, and more.
 
 ## ✨ Features
 
@@ -263,27 +267,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Convex](https://convex.dev) for the powerful real-time backend
 - [Monaco Editor](https://microsoft.github.io/monaco-editor/) for the code editing experience
 - [Piston API](https://github.com/engineer-man/piston) for secure code execution
-
-## 📚 Detailed Documentation
-
-For a comprehensive breakdown of this project's architecture and components, please visit our [DeepWiki](https://deepwiki.com/takitajwar17/lumenly.dev). The wiki provides in-depth documentation on:
-
-- Technology Stack
-- Workspace Management System
-- Activity Tracking
-- Code Editor System
-- Editor Toolbar
-- Code Execution
-- Real-time Collaboration
-- AI Integration
-- Code Review
-- Code Completion
-- Authentication and Routing
-- UI Components
-- Backend Architecture
-- Development Guide
-
-The DeepWiki is regularly updated and offers a more detailed technical overview than this README.
 
 ---
 
