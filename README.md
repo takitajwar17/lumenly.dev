@@ -13,11 +13,13 @@
   
   <a href="https://www.lumenly.dev">🌐 Website</a> •
   <a href="#features">✨ Features</a> •
+  <a href="#core-components">🧩 Core Components</a> •
   <a href="#getting-started">🚀 Getting Started</a> •
   <a href="#usage">📖 Usage</a> •
   <a href="#architecture">🏗️ Architecture</a> •
   <a href="#contributing">👥 Contributing</a> •
-  <a href="#roadmap">🗺️ Roadmap</a>
+  <a href="#roadmap">🗺️ Roadmap</a> •
+  <a href="#detailed-documentation">📚 Documentation</a>
 </div>
 
 ## ✨ Features
@@ -47,6 +49,38 @@ lumenly.dev is a cloud coding platform that makes collaboration effortless, with
 - **Customizable Editor:** Light and dark themes with professional coding environments
 - **Shareable Workspaces:** Easily share workspace links with collaborators
 - **Persistent Storage:** Your code is automatically saved in real-time
+
+## 🧩 Core Components
+
+Lumenly.dev is built around several key subsystems that work together to provide a seamless coding experience:
+
+### Workspace Management System
+- Handles creation, joining, and management of collaborative workspaces
+- Generates unique 6-character codes for easy sharing
+- Maintains workspace state and synchronizes between users
+
+### Code Editor System
+- Based on Monaco Editor (same as VS Code)
+- Integrates with real-time collaboration features
+- Provides syntax highlighting for 30+ programming languages
+- Includes editor toolbar with actions for running code and requesting AI reviews
+
+### Activity Tracking
+- Monitors user coding activity with GitHub-style contribution graphs
+- Tracks presence information for all collaborators
+- Shows cursor positions and selections in real-time
+
+### Real-time Collaboration
+- Built on Convex's real-time database
+- Synchronizes code changes instantly across all connected users
+- Provides presence indicators and cursor tracking
+- Ensures conflict-free collaborative editing
+
+### AI Integration
+- Connects with Nebius API for code analysis
+- Provides intelligent code reviews and suggestions
+- Identifies potential bugs and performance issues
+- Offers best practice recommendations
 
 ## 🚀 Getting Started
 
@@ -90,6 +124,29 @@ The application will start at http://localhost:5173
 
 ## 📖 Usage
 
+### User Flow
+
+The typical user flow in lumenly.dev follows these paths:
+
+1. **Authentication Flow:**
+   - User visits lumenly.dev
+   - Authentication check determines if already signed in
+   - If not authenticated, user proceeds to sign in
+
+2. **Workspace Selection:**
+   - After authentication, user arrives at the Workspace Hub
+   - Options include:
+     - Creating a new workspace
+     - Joining an existing workspace via code
+     - Opening a previously saved workspace
+
+3. **Coding Environment:**
+   - Inside the workspace, users interact with the Code Editor
+   - Multiple users can collaborate simultaneously
+   - Real-time changes are visible to all participants
+
+![User Flow Diagram](assets/images/Screenshot%202025-04-29%20152018.png)
+
 ### Creating a Workspace
 1. Visit the application and sign in
 2. Click "Create a Workspace" to start a new coding space
@@ -119,13 +176,60 @@ lumenly.dev is built with modern web technologies and a focus on real-time colla
 - **Frontend:** React, TypeScript, TailwindCSS, Monaco Editor (VS Code's editor)
 - **Backend:** Convex (real-time database and backend functions)
 - **Code Execution:** Piston API (secure code execution environment)
-- **AI Services:** OpenAI/Nebius for code analysis and reviews
+- **AI Services:** Nebius API for code analysis and reviews
+
+### System Overview
+The high-level architecture of lumenly.dev consists of several interconnected layers:
+
+- **Frontend Layer:** React-based UI components and hooks
+- **Core Components:** Workspace hub, code editor, toolbars, and panels
+- **Backend Layer:** Convex backend for data management and real-time synchronization
+- **External Services:** Piston API for code execution and Nebius API for AI code reviews
 
 ### Key Components
 - **Real-time Collaboration:** Built on Convex's real-time database for instant updates
 - **Monaco Editor Integration:** Professional code editing with syntax highlighting
 - **Presence System:** Track user activity and cursor positions in real-time
 - **Code Execution Engine:** Secure, isolated environment for running code in 30+ languages
+
+### Component Interactions
+During typical workflows like code execution and AI review:
+
+1. **Code Execution Flow:**
+   - User clicks "Run Code" in the editor toolbar
+   - Code is sent to the Convex backend
+   - Convex sends the code to Piston API for execution
+   - Results are returned to the frontend and displayed to the user
+
+2. **AI Review Flow:**
+   - User clicks "AI Review" in the editor toolbar
+   - Code is sent to the Convex backend
+   - Convex forwards the code to Nebius API for analysis
+   - AI feedback is formatted and displayed to the user
+
+![Component Interaction Diagram](assets/images/Screenshot%202025-04-29%20152139.png)
+
+### Real-time Collaboration Architecture
+The real-time collaboration features are powered by Convex backend:
+
+- Convex database synchronizes changes between all connected users
+- Custom hooks like `useCodeSync` and `useEditorPresence` manage real-time state
+- API endpoints in rooms.ts and userActivity.ts handle data operations
+- Updates propagate automatically to all connected clients
+
+![Real-time Collaboration Architecture](assets/images/Screenshot%202025-04-29%20151530.png)
+
+### Codebase Organization
+The codebase follows a standard React application structure with Convex backend integration:
+
+- **/src:** Frontend React components and hooks
+  - `/components`: UI components including editor, toolbar, and panels
+  - `/hooks`: Custom React hooks for real-time synchronization
+  - `/utils`: Helper functions and utilities
+- **/convex:** Backend functions, schema definitions, and APIs
+  - API endpoints for rooms, user activity, and code execution
+  - Data schema and validation
+- **/public:** Static assets and resources
 
 ## 👥 Contributing
 
@@ -159,6 +263,27 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Convex](https://convex.dev) for the powerful real-time backend
 - [Monaco Editor](https://microsoft.github.io/monaco-editor/) for the code editing experience
 - [Piston API](https://github.com/engineer-man/piston) for secure code execution
+
+## 📚 Detailed Documentation
+
+For a comprehensive breakdown of this project's architecture and components, please visit our [DeepWiki](https://deepwiki.com/takitajwar17/lumenly.dev). The wiki provides in-depth documentation on:
+
+- Technology Stack
+- Workspace Management System
+- Activity Tracking
+- Code Editor System
+- Editor Toolbar
+- Code Execution
+- Real-time Collaboration
+- AI Integration
+- Code Review
+- Code Completion
+- Authentication and Routing
+- UI Components
+- Backend Architecture
+- Development Guide
+
+The DeepWiki is regularly updated and offers a more detailed technical overview than this README.
 
 ---
 
