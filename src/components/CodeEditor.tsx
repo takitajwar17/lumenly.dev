@@ -299,7 +299,7 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     if (presenceEditorRef.current && selectedRoomId) {
       const position = presenceEditorRef.current.getPosition();
       if (position) {
-        // Only update typing status, position gets tracked separately
+        // Update typing status with optimized cursor handling
         updateTypingStatus(position);
       }
     }
@@ -307,38 +307,9 @@ export default function CodeEditor({ initialRoomId, onBack }: CodeEditorProps) {
     // Debounce server updates to avoid overwhelming the network
     debouncedUpdateCode(value);
     
-    // Clear any existing typing timeout
-    if (typingTimeoutId) {
-      clearTimeout(typingTimeoutId);
-    }
-    
-    // Set a timeout to indicate when typing has stopped
-    const timeoutId = setTimeout(() => {
-      if (presenceEditorRef.current && selectedRoomId) {
-        // CRITICAL: Must get position AFTER typing has stopped
-        // This ensures we have the correct final cursor position
-        const currentPosition = presenceEditorRef.current.getPosition();
-        const currentSelection = presenceEditorRef.current.getSelection();
-        
-        if (currentPosition) {
-          // Send cursor position after typing has stopped, with a longer delay
-          // to ensure the editor has settled
-          setTimeout(() => {
-            // Double-check that we still have a valid editor reference
-            if (presenceEditorRef.current) {
-              const finalPosition = presenceEditorRef.current.getPosition();
-              const finalSelection = presenceEditorRef.current.getSelection();
-              if (finalPosition) {
-                debouncedUpdatePresence(finalPosition, finalSelection, true);
-              }
-            }
-          }, 100);
-        }
-      }
-    }, 1500); // Increased significantly for better handling of rapid typing
-    
-    setTypingTimeoutId(timeoutId);
-  }, [selectedRoomId, debouncedUpdateCode, typingTimeoutId, updateTypingStatus, debouncedUpdatePresence]);
+    // Our updateTypingStatus function now handles the typing timeout properly
+    // so we don't need the older timeout logic here that was causing cursor jumps
+  }, [selectedRoomId, debouncedUpdateCode, updateTypingStatus, debouncedUpdatePresence]);
 
   // Example of search highlight feature usage
   const handleSearchHighlight = useCallback((searchTerm: string) => {

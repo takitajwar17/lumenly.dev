@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FiUsers, FiX } from 'react-icons/fi';
 import { getUserActivityStatus, getActivityDisplay, getActivityDetails } from '../activity/ActivityStatus';
 
@@ -22,6 +22,34 @@ export default function CollaboratorsPanel({
   onClose,
   isDrawer = false
 }: CollaboratorsPanelProps) {
+  // Sort users by activity priority: current user first, then typing users, then active, etc.
+  const sortedPresence = useMemo(() => {
+    if (!presence || presence.length === 0) return [];
+    
+    return [...presence].sort((a, b) => {
+      // Current user first
+      if (a.isCurrentUser && !b.isCurrentUser) return -1;
+      if (!a.isCurrentUser && b.isCurrentUser) return 1;
+      
+      // Then sort by activity status
+      const statusA = getUserActivityStatus(a);
+      const statusB = getUserActivityStatus(b);
+      
+      // Define priority order: typing > editing > selecting > active > idle > away
+      const priorityMap: Record<string, number> = {
+        'typing': 6,
+        'editing': 5,
+        'selecting': 4,
+        'active': 3,
+        'idle': 2,
+        'away': 1,
+        'offline': 0
+      };
+      
+      return priorityMap[statusB] - priorityMap[statusA];
+    });
+  }, [presence]);
+
   return (
     <div className={`h-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-colors ${isDrawer ? 'w-full' : 'w-64'}`}>
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 transition-colors flex justify-between items-center">
@@ -44,11 +72,14 @@ export default function CollaboratorsPanel({
         )}
       </div>
       <div className="flex-1 overflow-auto p-4">
-        {presence && presence.length > 0 ? (
+        {sortedPresence && sortedPresence.length > 0 ? (
           <div className="space-y-3">
-            {presence.map((user) => {
+            {sortedPresence.map((user) => {
               const activityStatus = getUserActivityStatus(user);
               const activityDisplay = getActivityDisplay(activityStatus);
+              
+              // Subtle animation for typing indicator
+              const isTyping = activityStatus === 'typing';
               
               return (
                 <div 
@@ -75,11 +106,13 @@ export default function CollaboratorsPanel({
                     </div>
                     <div 
                       className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 transition-colors ${
-                        activityStatus === 'typing' || activityStatus === 'editing' || activityStatus === 'active'
-                          ? 'bg-green-400 dark:bg-green-500' 
-                          : activityStatus === 'selecting' || activityStatus === 'idle'
-                            ? 'bg-yellow-400 dark:bg-yellow-500'
-                            : 'bg-gray-300 dark:bg-gray-600'
+                        activityStatus === 'typing' 
+                          ? 'bg-green-500 dark:bg-green-400 animate-pulse' 
+                          : activityStatus === 'editing' || activityStatus === 'active'
+                            ? 'bg-green-400 dark:bg-green-500' 
+                            : activityStatus === 'selecting' || activityStatus === 'idle'
+                              ? 'bg-yellow-400 dark:bg-yellow-500'
+                              : 'bg-gray-300 dark:bg-gray-600'
                       }`} 
                     />
                   </div>
@@ -96,7 +129,9 @@ export default function CollaboratorsPanel({
                       )}
                     </p>
                     <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 transition-colors">
-                      <span className={`inline-flex items-center rounded-full text-[10px] px-1.5 py-0.5 ${activityDisplay.className}`}>
+                      <span className={`inline-flex items-center rounded-full text-[10px] px-1.5 py-0.5 ${
+                        isTyping ? 'animate-pulse ' : ''
+                      }${activityDisplay.className}`}>
                         {activityDisplay.text}
                       </span>
                       

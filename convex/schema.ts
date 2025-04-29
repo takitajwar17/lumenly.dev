@@ -39,6 +39,7 @@ const applicationTables = {
     isActive: v.optional(v.boolean()),
     isTyping: v.optional(v.boolean()),
     lastActivity: v.optional(v.number()),
+    lastCursorUpdateTime: v.optional(v.number()),
   }).index("by_room", ["roomId"]),
 };
 

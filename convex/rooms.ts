@@ -261,6 +261,7 @@ export const updatePresence = mutation({
     })),
     isActive: v.optional(v.boolean()),
     isTyping: v.optional(v.boolean()),
+    timestamp: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -276,18 +277,30 @@ export const updatePresence = mutation({
       .unique();
 
     const now = Date.now();
+    const updateTimestamp = args.timestamp || now;
     const isAnonymous = !user.email || user.email.includes("anonymous");
     
     if (existing) {
-      await ctx.db.patch(existing._id, {
-        cursor: args.cursor,
-        selection: args.selection,
-        lastSeenTime: now,
-        lastPing: now,
-        isActive: args.isActive ?? existing.isActive ?? false,
-        isTyping: args.isTyping ?? existing.isTyping ?? false,
-        lastActivity: args.isActive ? now : existing.lastActivity,
-      });
+      // Only update if this request has a newer timestamp than the last cursor update
+      // This prevents race conditions between competing updates
+      if (!existing.lastCursorUpdateTime || updateTimestamp >= existing.lastCursorUpdateTime) {
+        await ctx.db.patch(existing._id, {
+          cursor: args.cursor,
+          selection: args.selection,
+          lastSeenTime: now,
+          lastPing: now,
+          isActive: args.isActive ?? existing.isActive ?? false,
+          isTyping: args.isTyping ?? existing.isTyping ?? false,
+          lastActivity: args.isActive ? now : existing.lastActivity,
+          lastCursorUpdateTime: updateTimestamp,
+        });
+      } else {
+        // Still update the heartbeat timestamps even if we reject the cursor update
+        await ctx.db.patch(existing._id, {
+          lastSeenTime: now,
+          lastPing: now,
+        });
+      }
     } else {
       // New presence entry - generate nickname and color
       const nickname = generateNickname();
@@ -307,6 +320,7 @@ export const updatePresence = mutation({
         isActive: args.isActive ?? false,
         isTyping: args.isTyping ?? false,
         lastActivity: args.isActive ? now : undefined,
+        lastCursorUpdateTime: updateTimestamp,
       });
     }
   },
@@ -320,19 +334,39 @@ export const getPresence = query({
     // Get current user's ID to highlight it differently in the UI
     const currentUserId = await getAuthUserId(ctx);
     
-    // Filter for users seen in the last 60 seconds (increased from 15)
-    // Using lastSeenTime which exists on all records
-    const presence = await ctx.db
+    // First get all presence records for this room
+    const allPresence = await ctx.db
       .query("presence")
       .withIndex("by_room", (q) => q.eq("roomId", args.roomId))
-      .filter((q) => q.gt(q.field("lastSeenTime"), Date.now() - 60000))
       .collect();
-      
-    // Add a field to indicate if this is the current user
-    return presence.map(user => ({
-      ...user,
-      isCurrentUser: currentUserId ? user.userId === currentUserId : false
-    }));
+    
+    // Filter and process based on activity status
+    const now = Date.now();
+    const processedPresence = allPresence
+      // First filter based on recent activity (last 60 seconds)
+      .filter(user => user.lastSeenTime > now - 60000)
+      // Then map with additional fields
+      .map(user => {
+        // Calculate activity duration for adaptive timeout
+        // Users who have been active longer get a longer grace period
+        const activityDuration = user.lastActivity ? now - user.lastActivity : 0;
+        const isCurrentUser = currentUserId ? user.userId === currentUserId : false;
+        
+        // Automatically clear typing status if it's been too long
+        // (client might have failed to send the update)
+        const typingTimeout = 3000; // 3 seconds
+        const isTypingTimeout = user.lastCursorUpdateTime && now - user.lastCursorUpdateTime > typingTimeout;
+        const adjustedTyping = isTypingTimeout ? false : user.isTyping;
+        
+        return {
+          ...user,
+          isCurrentUser,
+          isTyping: adjustedTyping,
+          activityDuration
+        };
+      });
+    
+    return processedPresence;
   },
 });
 
