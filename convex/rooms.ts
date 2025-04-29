@@ -320,12 +320,12 @@ export const getPresence = query({
     // Get current user's ID to highlight it differently in the UI
     const currentUserId = await getAuthUserId(ctx);
     
-    // Filter for users seen in the last 15 seconds
+    // Filter for users seen in the last 60 seconds (increased from 15)
     // Using lastSeenTime which exists on all records
     const presence = await ctx.db
       .query("presence")
       .withIndex("by_room", (q) => q.eq("roomId", args.roomId))
-      .filter((q) => q.gt(q.field("lastSeenTime"), Date.now() - 15000))
+      .filter((q) => q.gt(q.field("lastSeenTime"), Date.now() - 60000))
       .collect();
       
     // Add a field to indicate if this is the current user

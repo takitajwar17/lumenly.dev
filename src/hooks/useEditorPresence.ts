@@ -125,9 +125,11 @@ export function useEditorPresence({
       const now = Date.now();
       const isActivelyTyping = now - lastTypingTime < 1000;
       
-      // Update only typing status - never cursor position during typing
-      if (isActivelyTyping && lastCursorPositionRef.current) {
-        isTypingRef.current = true;
+      // Update isTypingRef to track current typing state
+      isTypingRef.current = isActivelyTyping;
+      
+      // Update typing status for all users - whether typing or not
+      if (lastCursorPositionRef.current) {
         void updatePresence({
           roomId,
           // Keep the last known position rather than getting current
@@ -136,12 +138,12 @@ export function useEditorPresence({
             column: lastCursorPositionRef.current.column
           },
           isActive: true,
-          isTyping: true,
+          isTyping: isActivelyTyping, // This ensures we update to false when not typing
           // Explicitly omit selection during typing
           selection: undefined
         });
       }
-    }, 750); // Frequent enough for responsive typing indicators
+    }, 750);
     
     // Regular presence updates for non-typing users
     const presenceHeartbeatId = setInterval(() => {
@@ -153,40 +155,34 @@ export function useEditorPresence({
       // Update isTypingRef to track current typing state
       isTypingRef.current = isActivelyTyping;
       
-      // Only send non-typing presence updates (never during typing)
-      if (!isActivelyTyping) {
-        const position = editorRef.current.getPosition();
+      // Always send a presence update, even if position hasn't changed
+      // This prevents users from disappearing due to inactivity
+      const position = editorRef.current.getPosition();
+      
+      if (position) {
+        // Save the current position
+        lastCursorPositionRef.current = position;
         
-        if (position && !pendingUpdateRef.current) {
-          // Only update if position has actually changed
-          if (!lastCursorPositionRef.current || 
-              position.lineNumber !== lastCursorPositionRef.current.lineNumber || 
-              position.column !== lastCursorPositionRef.current.column) {
-              
-            lastCursorPositionRef.current = position;
-            
-            const selection = editorRef.current.getSelection();
-            const hasSelection = selection && !selection.isEmpty();
-            
-            void updatePresence({
-              roomId,
-              cursor: {
-                line: position.lineNumber,
-                column: position.column,
-              },
-              selection: hasSelection ? {
-                startLine: selection.startLineNumber,
-                startColumn: selection.startColumn,
-                endLine: selection.endLineNumber,
-                endColumn: selection.endColumn,
-              } : undefined,
-              isActive: true,
-              isTyping: false
-            });
-          }
-        }
+        const selection = editorRef.current.getSelection();
+        const hasSelection = selection && !selection.isEmpty();
+        
+        void updatePresence({
+          roomId,
+          cursor: {
+            line: position.lineNumber,
+            column: position.column,
+          },
+          selection: hasSelection ? {
+            startLine: selection.startLineNumber,
+            startColumn: selection.startColumn,
+            endLine: selection.endLineNumber,
+            endColumn: selection.endColumn,
+          } : undefined,
+          isActive: true,
+          isTyping: isActivelyTyping
+        });
       }
-    }, 3000); // Every 3 seconds for regular cursor updates when not typing
+    }, 2000); // Every 2 seconds (reduced from 3) for more reliable presence updates
     
     // Clean up
     return () => {
