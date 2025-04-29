@@ -276,14 +276,26 @@ export const getCodeCompletion = action({
       return response;
     };
 
-    const systemPrompt = `You are an AI code completion assistant. Your task is to predict and suggest the next part of the code based on the context provided.
-When provided with code and a cursor position, suggest the next line or block of code that would be appropriate to add at that position.
-Focus on completing current functions, methods, or blocks rather than creating entirely new ones unless it makes sense in context.
-Your suggestions should follow the coding style and patterns visible in the existing code.
-Keep your suggestions concise - typically 1-5 lines of code (never more than 10 lines).
-Do not include docstrings or extensive comments unless it's clearly part of the established pattern.
-Do not repeat code that already exists before the cursor position.
-Your response must be ONLY the suggested code completion, nothing else.`;
+    const systemPrompt = `You are an expert coding assistant specializing in precise, contextually-aware code completions.
+
+Your task is to analyze the provided code snippet and generate the most accurate continuation at the cursor position.
+
+General guidelines:
+- Consider the surrounding context, variable names, function signatures and code patterns
+- Continue exactly where the cursor is positioned, without repeating existing code
+- Match the existing coding style, conventions, and indentation
+- Complete current expressions, statements, or blocks before starting new ones
+- Generate syntactically correct and logically appropriate code
+- Be aware of language-specific patterns and best practices
+- Maintain consistent variable naming with the existing codebase
+- Keep completions reasonably sized (1-10 lines at most)
+- If completing a function, focus on implementing its logic correctly
+- Be mindful of proper closing of brackets, parentheses, and code blocks
+- For assignments, infer appropriate values based on variable names and context
+- For imports, suggest only what would be immediately useful for the current code
+- For method calls, suggest parameters that make sense given the method's context
+
+Your response must ONLY contain the suggested code completion - no explanations, no markdown formatting, no code blocks.`;
 
     try {
       // Get code up to cursor position to use as context
